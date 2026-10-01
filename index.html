@@ -10,7 +10,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Source+Sans+3:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
 <style>
 :root {
 	--bg: #f6f1e8;
@@ -348,8 +347,34 @@ footer ul { margin: 0; padding-left: 18px; display: grid; gap: 2px; }
 details.opts summary { cursor: pointer; font-weight: 600; font-size: 15px; }
 details.opts .fields { margin-top: 12px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 @media (max-width: 640px) { details.opts .fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-#map { height: 340px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); }
-@media (max-width: 560px) { #map { height: 260px; } }
+.lens { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: thin; }
+.lens button {
+	flex: 0 0 auto; font: 600 14px/1 "Source Sans 3", system-ui, sans-serif; color: var(--fg); background: var(--bg);
+	border: 1px solid var(--line); border-radius: 999px; padding: 9px 13px; cursor: pointer; white-space: nowrap;
+}
+.lens button[aria-pressed="true"] { background: var(--road); border-color: var(--road); color: var(--surface); }
+.lens button:focus-visible, .mapbtns button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.mapwrap { position: relative; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--surface-2); display: grid; }
+.mapwrap iframe { display: block; width: 100%; height: min(62vh, 520px); min-height: 300px; border: 0; }
+.mapwrap:fullscreen iframe { height: calc(100vh - 48px); }
+.mapbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 12px; background: var(--surface); border-top: 1px solid var(--line); font-size: 14px; }
+#maplabel { font-weight: 600; min-width: 0; }
+.mapbtns { display: flex; gap: 12px; align-items: center; }
+.mapbtns button { font: 600 14px/1 "Source Sans 3", system-ui, sans-serif; background: none; border: 0; color: var(--accent); cursor: pointer; padding: 4px 0; }
+.maptip { font-size: 13px; color: var(--muted); }
+.stays { display: grid; gap: 12px; }
+.stays h3 { margin-top: 4px; }
+.stop { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 12px; align-items: start; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); }
+.stop .n { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; color: var(--surface); background: var(--road); font-family: "Bricolage Grotesque", Georgia, serif; }
+.stop.dest .n { background: var(--accent); }
+.stop .t { display: grid; gap: 6px; min-width: 0; }
+.stop .t b { font-size: 16px; }
+.stop .acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.stop .acts button, .stop .acts a {
+	font: 600 13px/1 "Source Sans 3", system-ui, sans-serif; text-decoration: none; color: var(--fg); background: var(--surface);
+	border: 1px solid var(--line); border-radius: 999px; padding: 8px 11px; cursor: pointer;
+}
+.stop .acts button:first-child { border-color: var(--road); color: var(--road); }
 .status { font-size: 15px; color: var(--muted); min-height: 1.4em; }
 .status.err { color: var(--accent); font-weight: 600; }
 .summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
@@ -359,7 +384,6 @@ details.opts .fields { margin-top: 12px; grid-template-columns: repeat(3, minmax
 .summary .box.cost { background: var(--accent-soft); }
 .summary .box.cost .big { color: var(--accent); }
 #results[hidden] { display: none !important; }
-.leaflet-container { font: inherit; }
 </style>
 </head>
 <body>
@@ -439,13 +463,20 @@ details.opts .fields { margin-top: 12px; grid-template-columns: repeat(3, minmax
 					<div class="box cost"><span class="eyebrow">One way</span><span class="big" id="r-one">-</span></div>
 					<div class="box cost"><span class="eyebrow">Round trip</span><span class="big" id="r-rt">-</span></div>
 				</div>
-				<div class="seg" role="group" aria-label="Map" style="max-width:320px">
-					<button type="button" data-map="google" aria-pressed="true">Google Maps</button>
-					<button type="button" data-map="osm" aria-pressed="false">OpenStreetMap</button>
+				<div class="lens" id="lens" role="group" aria-label="What to show on the map"></div>
+				<div class="mapwrap" id="mapwrap">
+					<iframe id="gframe" title="Google Maps" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade"></iframe>
+					<div class="mapbar">
+						<span id="maplabel">Route</span>
+						<span class="mapbtns">
+							<button type="button" id="mapfull">Full screen</button>
+							<a id="mapopen" href="#" target="_blank" rel="noopener">Open in Google Maps</a>
+						</span>
+					</div>
 				</div>
-				<iframe id="gframe" title="Route on Google Maps" loading="lazy" referrerpolicy="no-referrer-when-downgrade" style="width:100%;height:340px;border:1px solid var(--line);border-radius:12px"></iframe>
-				<div id="map" role="img" aria-label="Route map" hidden></div>
+				<p class="maptip">Zoom with the + and - buttons on the map, Ctrl + scroll on a computer, or two fingers on a phone. Full screen gives you the most room.</p>
 				<p id="fuelnote" style="font-size:14px;color:var(--muted)"></p>
+				<div id="stays" class="stays"></div>
 				<p id="s-plan"></p>
 				<div class="grid2">
 					<div style="display:grid;gap:10px;min-width:0">
@@ -678,12 +709,11 @@ details.opts .fields { margin-top: 12px; grid-template-columns: repeat(3, minmax
 			<li><a href="https://happyfares.in/blog/goa-december-travel-guide-india-2026/" rel="noopener">Goa in December, HappyFares</a></li>
 			<li><a href="https://shirdisansthan.org.in/shirdi-paid-darshan-pass/" rel="noopener">Shirdi darshan pass</a></li>
 			<li>Daily petrol prices from <a href="https://www.goodreturns.in/petrol-price.html" rel="noopener">Goodreturns</a>, refreshed every morning</li>
-			<li>Place search by <a href="https://photon.komoot.io/" rel="noopener">Photon</a> and routes by <a href="https://project-osrm.org/" rel="noopener">OSRM</a>, both on <a href="https://www.openstreetmap.org/copyright" rel="noopener">OpenStreetMap</a> data</li>
+			<li>Maps by Google Maps. Place search by <a href="https://photon.komoot.io/" rel="noopener">Photon</a> and distances by <a href="https://project-osrm.org/" rel="noopener">OSRM</a>, both on <a href="https://www.openstreetmap.org/copyright" rel="noopener">OpenStreetMap</a> data</li>
 		</ul>
 	</footer>
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <script src="places.js"></script>
 <script>
 (function () {
@@ -889,39 +919,112 @@ details.opts .fields { margin-top: 12px; grid-template-columns: repeat(3, minmax
 		return { price: Math.round(avg * 100) / 100, text: names.join(", ") };
 	}
 
-	var map = null, layer = null;
-	function drawMap(a, b, line) {
-		if (!window.L) { $("map").hidden = true; return; }
-		if (!map) {
-			map = L.map("map", { scrollWheelZoom: false });
-			L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 18, attribution: "&copy; OpenStreetMap contributors" }).addTo(map);
+	// Google Maps (keyless embed) with lenses: route, hotels at each night stop, things to do at the destination.
+	var lensKey = "route", lenses = [];
+	function gEmbed(qs) { return "https://maps.google.com/maps?" + qs + "&output=embed"; }
+	function gOpen(qs) { return "https://www.google.com/maps?" + qs; }
+	function ll(p) { return p.lat.toFixed(5) + "," + p.lon.toFixed(5); }
+	function hav(a, b) {
+		var R = 6371, t = Math.PI / 180, dLa = (b[0] - a[0]) * t, dLo = (b[1] - a[1]) * t;
+		var x = Math.sin(dLa / 2) * Math.sin(dLa / 2) + Math.cos(a[0] * t) * Math.cos(b[0] * t) * Math.sin(dLo / 2) * Math.sin(dLo / 2);
+		return 2 * R * Math.asin(Math.sqrt(x));
+	}
+	// Points along the route at equal shares of the drive, one per night stop.
+	function stopPoints(line, nights) {
+		if (!nights || !line || line.length < 2) { return []; }
+		var cum = [ 0 ];
+		for (var i = 1; i < line.length; i++) { cum.push(cum[i - 1] + hav(line[i - 1], line[i])); }
+		var total = cum[cum.length - 1], out = [], j = 1;
+		for (var k = 1; k <= nights; k++) {
+			var target = total * k / (nights + 1);
+			while (j < cum.length - 1 && cum[j] < target) { j++; }
+			out.push({ lat: line[j][0], lon: line[j][1], km: Math.round(cum[j]) });
 		}
-		if (layer) { layer.remove(); }
-		var css = getComputedStyle(document.documentElement);
-		var road = css.getPropertyValue("--road").trim() || "#2f5d50", acc = css.getPropertyValue("--accent").trim() || "#c2541f";
-		var poly = L.polyline(line, { color: road, weight: 5, opacity: 0.9 });
-		layer = L.layerGroup([ poly,
-			L.circleMarker([ a.lat, a.lon ], { radius: 7, color: road, fillColor: "#fff", fillOpacity: 1, weight: 3 }).bindTooltip(a.name),
-			L.circleMarker([ b.lat, b.lon ], { radius: 8, color: acc, fillColor: acc, fillOpacity: 1, weight: 3 }).bindTooltip(b.name)
-		]).addTo(map);
-		setTimeout(function () { map.invalidateSize(); map.fitBounds(poly.getBounds(), { padding: [ 24, 24 ] }); }, 50);
+		return out;
 	}
-
-	var mapMode = "google";
-	try { mapMode = localStorage.getItem("ptp-map") || "google"; } catch (e) {}
-	function showGoogle() {
+	var reverseCache = {};
+	function nameStop(pt) {
+		var best = null, bd = 1e9;
+		(window.PTP_PLACES || []).forEach(function (r) { var d = hav([ pt.lat, pt.lon ], [ r[2], r[3] ]); if (d < bd) { bd = d; best = r; } });
+		if (best && bd < 45) { return Promise.resolve({ name: best[0], state: best[1], lat: best[2], lon: best[3] }); }
+		var key = pt.lat.toFixed(2) + "," + pt.lon.toFixed(2);
+		if (reverseCache[key]) { return reverseCache[key]; }
+		reverseCache[key] = fetch("https://photon.komoot.io/reverse?limit=1&lat=" + pt.lat + "&lon=" + pt.lon + "&osm_tag=place")
+			.then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+				var f = d && d.features && d.features[0], pr = (f && f.properties) || {};
+				var name = pr.name || pr.city || pr.county;
+				return name ? { name: name, state: pr.state || "", lat: pt.lat, lon: pt.lon } : { name: "the highway near km " + pt.km, state: "", lat: pt.lat, lon: pt.lon };
+			}).catch(function () { return { name: "the highway near km " + pt.km, state: "", lat: pt.lat, lon: pt.lon }; });
+		return reverseCache[key];
+	}
+	function where(p) { return encodeURIComponent(p.name + (p.state ? ", " + p.state : "")); }
+	function setLens(k) {
+		var L = lenses.filter(function (x) { return x.k === k; })[0] || lenses[0];
+		if (!L) { return; }
+		lensKey = L.k;
 		var f = $("gframe");
-		if (f.dataset.src && f.getAttribute("src") !== f.dataset.src) { f.setAttribute("src", f.dataset.src); }
+		if (f.getAttribute("src") !== L.src) { f.setAttribute("src", L.src); }
+		$("maplabel").textContent = L.title;
+		$("mapopen").href = L.open;
+		document.querySelectorAll("#lens button").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.k === L.k ? "true" : "false"); });
 	}
-	function setMap(mode) {
-		mapMode = mode;
-		try { localStorage.setItem("ptp-map", mode); } catch (e) {}
-		document.querySelectorAll("[data-map]").forEach(function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-map") === mode ? "true" : "false"); });
-		$("gframe").hidden = mode !== "google";
-		$("map").hidden = mode !== "osm";
-		if (mode === "google") { showGoogle(); } else if (map && layer) { setTimeout(function () { map.invalidateSize(); }, 30); }
+	function buildMap(a, b, stops) {
+		var via = stops.map(function (s) { return "+to:" + ll(s); }).join("");
+		lenses = [ { k: "route", label: "Route", title: a.name + " to " + b.name + (stops.length ? ", via your night stops" : ""),
+			src: gEmbed("saddr=" + ll(a) + "&daddr=" + via.replace(/^\+to:/, "") + (stops.length ? "+to:" : "") + ll(b)),
+			open: "https://www.google.com/maps/dir/?api=1&travelmode=driving&origin=" + ll(a) + "&destination=" + ll(b) + (stops.length ? "&waypoints=" + stops.map(ll).join("%7C") : "") } ];
+		stops.forEach(function (s, i) {
+			lenses.push({ k: "stay" + i, label: "Night " + (i + 1) + " hotels", title: "Hotels near " + s.name, src: gEmbed("q=hotels+near+" + where(s)), open: gOpen("q=hotels+near+" + where(s)) });
+		});
+		[ [ "todo", "Things to do", "tourist attractions in " ], [ "hotels", "Hotels at " + b.name, "hotels in " ], [ "food", "Veg food", "vegetarian restaurants in " ], [ "fuel", "Petrol pumps", "petrol pump near " ] ].forEach(function (x) {
+			lenses.push({ k: x[0], label: x[1], title: x[2].charAt(0).toUpperCase() + x[2].slice(1) + b.name, src: gEmbed("q=" + encodeURIComponent(x[2]) + where(b)), open: gOpen("q=" + encodeURIComponent(x[2]) + where(b)) });
+		});
+		var bar = $("lens"); bar.innerHTML = "";
+		lenses.forEach(function (L) {
+			var btn = document.createElement("button"); btn.type = "button"; btn.dataset.k = L.k; btn.textContent = L.label;
+			btn.addEventListener("click", function () { setLens(L.k); });
+			bar.appendChild(btn);
+		});
+		setLens(lenses.some(function (x) { return x.k === lensKey; }) ? lensKey : "route");
+
+		// Stays list: one card per night stop, then the destination.
+		var box = $("stays"); box.innerHTML = "<h3>Where you will stay</h3>";
+		var card = function (n, title, sub, isDest, place, lensFor) {
+			var d = document.createElement("div"); d.className = "stop" + (isDest ? " dest" : "");
+			d.innerHTML = '<span class="n"></span><div class="t"><b></b><span style="color:var(--muted);font-size:14px"></span><div class="acts"></div></div>';
+			d.querySelector(".n").textContent = n; d.querySelector("b").textContent = title; d.querySelector(".t span").textContent = sub;
+			var acts = d.querySelector(".acts");
+			var mapBtn = document.createElement("button"); mapBtn.type = "button"; mapBtn.textContent = "Show hotels on the map";
+			mapBtn.addEventListener("click", function () { setLens(lensFor); $("mapwrap").scrollIntoView({ behavior: "smooth", block: "center" }); });
+			acts.appendChild(mapBtn);
+			[ [ "Google Hotels", "https://www.google.com/travel/hotels/" + encodeURIComponent(place.name + (place.state ? " " + place.state : "")) ],
+				[ "Booking.com", "https://www.booking.com/searchresults.html?ss=" + encodeURIComponent(place.name + (place.state ? ", " + place.state : "")) ] ].forEach(function (x) {
+				var aEl = document.createElement("a"); aEl.href = x[1]; aEl.target = "_blank"; aEl.rel = "noopener"; aEl.textContent = x[0]; acts.appendChild(aEl);
+			});
+			if (isDest) {
+				var todo = document.createElement("button"); todo.type = "button"; todo.textContent = "Things to do";
+				todo.addEventListener("click", function () { setLens("todo"); $("mapwrap").scrollIntoView({ behavior: "smooth", block: "center" }); });
+				acts.insertBefore(todo, acts.children[1]);
+			}
+			box.appendChild(d);
+		};
+		stops.forEach(function (s, i) { card(i + 1, "Night " + (i + 1) + ": around " + s.name, "About " + s.km.toLocaleString("en-IN") + " km from " + a.name + ". Book somewhere on the highway side of town.", false, s, "stay" + i); });
+		card("⚑", "Arrive: " + b.name, stops.length ? "Day " + (stops.length + 1) + " of the drive." : "Same-day arrival.", true, b, "hotels");
 	}
-	document.querySelectorAll("[data-map]").forEach(function (b) { b.addEventListener("click", function () { setMap(b.getAttribute("data-map")); }); });
+	var stopsKey = "";
+	function updateStops(a, b, nights) {
+		var key = ll(a) + ll(b) + nights;
+		if (key === stopsKey) { return; }
+		stopsKey = key;
+		var pts = stopPoints(route.line, nights);
+		Promise.all(pts.map(function (pt) { return nameStop(pt).then(function (n) { n.km = pt.km; return n; }); })).then(function (stops) {
+			if (stopsKey === key) { buildMap(a, b, stops); }
+		});
+	}
+	$("mapfull").addEventListener("click", function () {
+		var w = $("mapwrap");
+		try { (w.requestFullscreen || w.webkitRequestFullscreen).call(w); } catch (e) { window.open($("mapopen").href, "_blank", "noopener"); }
+	});
 
 	function render() {
 		if (!route) { return; }
@@ -989,8 +1092,7 @@ details.opts .fields { margin-top: 12px; grid-template-columns: repeat(3, minmax
 		$("fuelnote").textContent = live && !fuelTouched
 			? "Petrol today (" + FUEL.updated + "): " + live.text + ". Using Rs " + live.price + "/L. Change it in Trip settings."
 			: fuelTouched ? "Using your petrol price of Rs " + fuel + "/L." : "";
-		$("gframe").dataset.src = "https://maps.google.com/maps?saddr=" + a.lat + "," + a.lon + "&daddr=" + b.lat + "," + b.lon + "&output=embed";
-		if (mapMode === "google") { showGoogle(); }
+		updateStops(a, b, nights);
 		$("gmaps").href = "https://www.google.com/maps/dir/?api=1&travelmode=driving&origin=" + a.lat + "," + a.lon + "&destination=" + b.lat + "," + b.lon;
 	}
 
@@ -1001,7 +1103,7 @@ details.opts .fields { margin-top: 12px; grid-template-columns: repeat(3, minmax
 			status("Finding the road route...");
 			return getRoute(p[0], p[1]).then(function (r) {
 				route = r; $("results").hidden = false; status("");
-				$("map").hidden = false; render(); drawMap(p[0], p[1], r.line); setMap(mapMode);
+				stopsKey = ""; render();
 				try { localStorage.setItem("ptp-last", JSON.stringify(places)); } catch (e) {}
 			});
 		}).catch(function (e) { status(e && e.message ? e.message : "Something went wrong. Check your connection and try again.", true); })
