@@ -1,0 +1,675 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pune Trip Planner</title>
+<meta name="description" content="Road and rail trip plans from Pune: Patna by car, Tirupati, Goa and Maharashtra circuits, with 2026 costs and a drive cost calculator.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+:root {
+	--bg: #f6f1e8;
+	--surface: #fffaf2;
+	--surface-2: #efe6d6;
+	--fg: #22201c;
+	--muted: #6b6356;
+	--line: #ddd0bb;
+	--accent: #c2541f;
+	--accent-soft: #f6dccb;
+	--road: #2f5d50;
+	--road-soft: #d6e6df;
+	--warn: #8a5a00;
+	--warn-soft: #f7e8c4;
+	color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme="light"]) {
+		--bg: #17150f;
+		--surface: #211e17;
+		--surface-2: #2b271e;
+		--fg: #f1ebe0;
+		--muted: #a99f8d;
+		--line: #3b352a;
+		--accent: #ef8a52;
+		--accent-soft: #3d2618;
+		--road: #7fc2ad;
+		--road-soft: #1d332c;
+		--warn: #f1c565;
+		--warn-soft: #3a2f14;
+		color-scheme: dark;
+	}
+}
+:root[data-theme="dark"] {
+	--bg: #17150f;
+	--surface: #211e17;
+	--surface-2: #2b271e;
+	--fg: #f1ebe0;
+	--muted: #a99f8d;
+	--line: #3b352a;
+	--accent: #ef8a52;
+	--accent-soft: #3d2618;
+	--road: #7fc2ad;
+	--road-soft: #1d332c;
+	--warn: #f1c565;
+	--warn-soft: #3a2f14;
+	color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+	margin: 0;
+	background: var(--bg);
+	color: var(--fg);
+	font: 400 16px/1.55 "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+	padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px);
+}
+.wrap {
+	max-width: 1040px;
+	margin: 0 auto;
+	padding-inline: max(16px, env(safe-area-inset-left, 0px));
+	padding-block: 28px 56px;
+}
+h1, h2, h3 {
+	font-family: "Bricolage Grotesque", Georgia, serif;
+	line-height: 1.15;
+	text-wrap: balance;
+	margin: 0;
+}
+h1 { font-size: clamp(30px, 6vw, 48px); font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: clamp(22px, 4vw, 28px); font-weight: 800; }
+h3 { font-size: 18px; font-weight: 600; }
+p { margin: 0; max-width: 68ch; }
+a { color: var(--accent); }
+.eyebrow {
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--muted);
+}
+header.top {
+	display: grid;
+	gap: 10px;
+	padding-bottom: 22px;
+	border-bottom: 2px solid var(--fg);
+}
+header.top .sub { color: var(--muted); font-size: 18px; }
+.stamp {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px 18px;
+	font-size: 14px;
+	color: var(--muted);
+}
+.stamp b { color: var(--fg); font-weight: 600; }
+
+nav.tabs {
+	position: sticky;
+	top: env(safe-area-inset-top, 0px);
+	z-index: 5;
+	display: flex;
+	gap: 6px;
+	overflow-x: auto;
+	padding: 12px 0;
+	margin-bottom: 20px;
+	background: var(--bg);
+	border-bottom: 1px solid var(--line);
+	scrollbar-width: none;
+}
+nav.tabs::-webkit-scrollbar { display: none; }
+nav.tabs button {
+	flex: 0 0 auto;
+	font: 600 15px/1 "Source Sans 3", system-ui, sans-serif;
+	color: var(--fg);
+	background: var(--surface);
+	border: 1px solid var(--line);
+	border-radius: 999px;
+	padding: 10px 16px;
+	cursor: pointer;
+}
+nav.tabs button[aria-selected="true"] {
+	background: var(--fg);
+	color: var(--bg);
+	border-color: var(--fg);
+}
+nav.tabs button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+section.trip { display: grid; gap: 22px; }
+section.trip[hidden] { display: none !important; }
+.lede { display: grid; gap: 8px; }
+.lede p { color: var(--muted); font-size: 17px; }
+
+.grid2 {
+	display: grid;
+	grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+	gap: 22px;
+	align-items: start;
+}
+@media (max-width: 760px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
+
+.panel {
+	background: var(--surface);
+	border: 1px solid var(--line);
+	border-radius: 14px;
+	padding: 18px;
+	display: grid;
+	gap: 14px;
+	min-width: 0;
+}
+.panel.calc { border: 2px solid var(--road); }
+
+/* Route strip: the stops as a road with milestones */
+.route {
+	display: grid;
+	gap: 0;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.route li {
+	display: grid;
+	grid-template-columns: 22px minmax(0, 1fr);
+	gap: 12px;
+	position: relative;
+	padding-bottom: 16px;
+}
+.route li::before {
+	content: "";
+	position: absolute;
+	left: 10px;
+	top: 18px;
+	bottom: 0;
+	width: 2px;
+	background: repeating-linear-gradient(var(--road) 0 6px, transparent 6px 11px);
+}
+.route li:last-child::before { display: none; }
+.route .dot {
+	width: 22px;
+	height: 22px;
+	border-radius: 50%;
+	background: var(--road-soft);
+	border: 2px solid var(--road);
+	margin-top: 2px;
+}
+.route li:last-child .dot { background: var(--road); }
+.route .leg { display: grid; gap: 2px; }
+.route .meta { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.tablewrap { overflow-x: auto; }
+table {
+	width: 100%;
+	border-collapse: collapse;
+	font-variant-numeric: tabular-nums;
+	font-size: 15px;
+}
+th, td {
+	text-align: left;
+	padding: 9px 10px;
+	border-bottom: 1px solid var(--line);
+	vertical-align: top;
+}
+th { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+td.num, th.num { text-align: right; white-space: nowrap; }
+tr.total td { font-weight: 700; border-bottom: 2px solid var(--fg); }
+
+.callout {
+	border-left: 4px solid var(--warn);
+	background: var(--warn-soft);
+	border-radius: 0 10px 10px 0;
+	padding: 12px 14px;
+	display: grid;
+	gap: 4px;
+}
+.callout b { color: var(--warn); }
+
+ul.tips { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+
+/* Calculator */
+.fields {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 12px;
+}
+@media (max-width: 420px) { .fields { grid-template-columns: minmax(0, 1fr); } }
+label.f { display: grid; gap: 4px; font-size: 14px; font-weight: 600; }
+label.f span.hint { font-weight: 400; color: var(--muted); font-size: 13px; }
+input[type="number"], select {
+	font: 600 16px/1.2 "Source Sans 3", system-ui, sans-serif;
+	color: var(--fg);
+	background: var(--bg);
+	border: 1px solid var(--line);
+	border-radius: 8px;
+	padding: 9px 10px;
+	width: 100%;
+	font-variant-numeric: tabular-nums;
+}
+input:focus-visible, select:focus-visible { outline: 3px solid var(--road); outline-offset: 1px; }
+.seg { display: flex; gap: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button {
+	flex: 1;
+	font: 600 14px/1 "Source Sans 3", system-ui, sans-serif;
+	padding: 10px 8px;
+	border: 0;
+	background: var(--bg);
+	color: var(--fg);
+	cursor: pointer;
+}
+.seg button[aria-pressed="true"] { background: var(--road); color: var(--surface); }
+.result {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 10px;
+}
+.result .box {
+	background: var(--road-soft);
+	border-radius: 10px;
+	padding: 12px;
+	display: grid;
+	gap: 2px;
+}
+.result .big {
+	font-family: "Bricolage Grotesque", Georgia, serif;
+	font-size: clamp(24px, 5vw, 30px);
+	font-weight: 800;
+	font-variant-numeric: tabular-nums;
+	color: var(--road);
+}
+.bars { display: grid; gap: 8px; }
+.bar { display: grid; grid-template-columns: 92px minmax(0, 1fr) auto; gap: 10px; align-items: center; font-size: 14px; font-variant-numeric: tabular-nums; }
+.bar .track { height: 12px; background: var(--surface-2); border-radius: 6px; overflow: hidden; }
+.bar .fill { height: 100%; background: var(--accent); border-radius: 6px; }
+.bar.car .fill { background: var(--road); }
+.verdict { font-size: 15px; }
+
+.circuits { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+.circuit { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 8px; align-content: start; }
+.circuit.pick { border: 2px solid var(--accent); }
+.circuit .cost { font-family: "Bricolage Grotesque", Georgia, serif; font-size: 24px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.tag { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 3px 9px; justify-self: start; }
+
+.days { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.days li { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 10px; }
+.days .d { font-family: "Bricolage Grotesque", Georgia, serif; font-weight: 800; color: var(--accent); }
+
+.timeline { display: grid; gap: 0; }
+.timeline .row { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+@media (max-width: 480px) { .timeline .row { grid-template-columns: minmax(0, 1fr); gap: 2px; } }
+.timeline .when { font-weight: 700; }
+
+footer { margin-top: 36px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; display: grid; gap: 8px; }
+footer ul { margin: 0; padding-left: 18px; display: grid; gap: 2px; }
+.themebtn {
+	justify-self: start;
+	font: 600 14px/1 "Source Sans 3", system-ui, sans-serif;
+	background: var(--surface);
+	color: var(--fg);
+	border: 1px solid var(--line);
+	border-radius: 999px;
+	padding: 8px 14px;
+	cursor: pointer;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+	<header class="top">
+		<span class="eyebrow">Winter 2026 to 2027 · from Pune</span>
+		<h1>Pune Trip Planner</h1>
+		<p class="sub">Four trips with routes, day plans and what they really cost: Patna by car, Tirupati, Goa and a pick of Maharashtra circuits.</p>
+		<div class="stamp">
+			<span>Prices checked <b>1 Oct 2026</b></span>
+			<span>Petrol <b>Rs 102 to 115/L</b> on the routes</span>
+			<span>Food assumed <b>mostly home cooked</b></span>
+		</div>
+	</header>
+
+	<nav class="tabs" role="tablist" aria-label="Trips">
+		<button role="tab" id="tab-patna" aria-controls="patna" aria-selected="true">Patna by car</button>
+		<button role="tab" id="tab-tirupati" aria-controls="tirupati" aria-selected="false">Tirupati</button>
+		<button role="tab" id="tab-goa" aria-controls="goa" aria-selected="false">Goa</button>
+		<button role="tab" id="tab-mh" aria-controls="mh" aria-selected="false">Maharashtra</button>
+		<button role="tab" id="tab-when" aria-controls="when" aria-selected="false">When to go</button>
+	</nav>
+
+	<!-- PATNA -->
+	<section class="trip" id="patna" role="tabpanel" aria-labelledby="tab-patna">
+		<div class="lede">
+			<h2>Pune to Patna, three days on the road</h2>
+			<p>About 1,850 to 1,900 km and 30 to 33 hours of actual driving. Split it with two night stops and drive in daylight only.</p>
+		</div>
+		<div class="grid2">
+			<div class="panel">
+				<h3>The route</h3>
+				<ol class="route">
+					<li><span class="dot"></span><div class="leg"><b>Pune</b><span class="meta">Leave by 6 AM. Shirdi, then onto the Samruddhi expressway.</span></div></li>
+					<li><span class="dot"></span><div class="leg"><b>Nagpur</b> <span class="meta">Day 1 · ~700 km · 9 to 10 h</span><span class="meta">Fastest leg. Night stop 1. Fill the tank.</span></div></li>
+					<li><span class="dot"></span><div class="leg"><b>Varanasi</b> <span class="meta">Day 2 · ~580 km · ~10 h</span><span class="meta">Seoni, Jabalpur, Katni, Rewa on NH44 and NH30. Some two-lane stretches. Night stop 2. Petrol is cheapest in UP, so fill here.</span></div></li>
+					<li><span class="dot"></span><div class="leg"><b>Patna</b> <span class="meta">Day 3 · ~260 km · 5 to 6 h</span><span class="meta">Mohania, Sasaram, Arrah, Koilwar bridge.</span></div></li>
+				</ol>
+				<div class="callout">
+					<b>December fog</b>
+					<p>Early December brings patchy fog from 5 to 9 AM, worst between Rewa and Patna. Dense fog runs late December to mid January. Drive 8 AM to 5 PM only in UP and Bihar, keep to 30 km/h or less in thick fog, use low beam and fog lamps, and stop at a fuel station, never on the shoulder.</p>
+				</div>
+			</div>
+
+			<div class="panel calc" aria-labelledby="calc-h">
+				<h3 id="calc-h">Drive cost calculator</h3>
+				<div class="fields">
+					<label class="f">People (adults)<input type="number" id="c-people" min="1" max="7" value="3"></label>
+					<label class="f">Mileage, km/L<span class="hint">13.5 loaded, 15.5 light</span><input type="number" id="c-kmpl" min="5" max="30" step="0.5" value="14.5"></label>
+					<label class="f">Petrol, Rs/L<input type="number" id="c-fuel" min="80" max="140" step="0.5" value="110"></label>
+					<label class="f">Distance, km<input type="number" id="c-km" min="1500" max="2200" step="10" value="1875"></label>
+					<label class="f">Hotel per room per night<input type="number" id="c-room" min="500" max="8000" step="100" value="2000"></label>
+					<label class="f">Night stops<input type="number" id="c-nights" min="0" max="4" value="2"></label>
+				</div>
+				<div class="f" style="display:grid;gap:6px">
+					<span style="font-size:14px;font-weight:600">Food on the way</span>
+					<div class="seg" role="group" aria-label="Food">
+						<button type="button" data-food="home" aria-pressed="true">Home cooked</button>
+						<button type="button" data-food="out" aria-pressed="false">Eat out</button>
+					</div>
+				</div>
+				<div class="result" aria-live="polite">
+					<div class="box"><span class="eyebrow">One way</span><span class="big" id="r-one">-</span></div>
+					<div class="box"><span class="eyebrow">Round trip</span><span class="big" id="r-rt">-</span></div>
+				</div>
+				<div class="tablewrap"><table id="r-table"><tbody></tbody></table></div>
+				<h3>Round trip compared</h3>
+				<div class="bars" id="r-bars"></div>
+				<p class="verdict" id="r-verdict"></p>
+			</div>
+		</div>
+	</section>
+
+	<!-- TIRUPATI -->
+	<section class="trip" id="tirupati" role="tabpanel" aria-labelledby="tab-tirupati" hidden>
+		<div class="lede">
+			<h2>Tirupati and Tirumala, three days by train</h2>
+			<p>Overnight trains reach Renigunta, 10 km from Tirupati, in about 15 hours. Driving is ~1,090 km each way with a Hyderabad stop, which eats four days for a three-day trip.</p>
+		</div>
+		<div class="grid2">
+			<div class="panel">
+				<h3>Day plan</h3>
+				<ol class="days">
+					<li><span class="d">D1</span><p>Arrive Renigunta around 7:30 AM on 22159. Check in and rest. Evening: Sri Padmavathi temple at Tiruchanur, then Govindaraja Swamy temple.</p></li>
+					<li><span class="d">D2</span><p>Up to Tirumala by TTD bus (Rs 60 to 100) or cab (Rs 1,200 to 1,500 return). Darshan, laddus, then Akasa Ganga and Papavinasam. Back down by evening.</p></li>
+					<li><span class="d">D3</span><p>Srikalahasti (36 km) or Kanipakam, then the night train home.</p></li>
+				</ol>
+				<h3>Trains from Pune</h3>
+				<div class="tablewrap"><table>
+					<thead><tr><th>Train</th><th>Leaves</th><th>Arrives</th></tr></thead>
+					<tbody>
+						<tr><td>22159</td><td>16:25</td><td>07:30</td></tr>
+						<tr><td>12163</td><td>22:10</td><td>12:55</td></tr>
+						<tr><td>16381</td><td>23:20</td><td>14:30</td></tr>
+						<tr><td>22157</td><td>02:55</td><td>18:50</td></tr>
+					</tbody>
+				</table></div>
+			</div>
+			<div class="panel">
+				<h3>Cost for 4 adults</h3>
+				<div class="tablewrap"><table>
+					<thead><tr><th>Item</th><th class="num">Budget</th><th class="num">Mid-range</th></tr></thead>
+					<tbody>
+						<tr><td>Train, round trip</td><td class="num">10,800 <small>3AC</small></td><td class="num">15,200 <small>2AC</small></td></tr>
+						<tr><td>Stay, 2 nights</td><td class="num">2,400</td><td class="num">8,000</td></tr>
+						<tr><td>Food, mostly packed</td><td class="num">1,000</td><td class="num">2,000</td></tr>
+						<tr><td>Local travel</td><td class="num">2,500</td><td class="num">4,500</td></tr>
+						<tr><td>Darshan, laddus, puja</td><td class="num">1,700</td><td class="num">3,000</td></tr>
+						<tr class="total"><td>Total</td><td class="num">Rs 18,400</td><td class="num">Rs 32,700</td></tr>
+					</tbody>
+				</table></div>
+				<div class="callout">
+					<b>Book darshan 90 days ahead</b>
+					<p>Rs 300 Special Entry tickets are online only at ttdevasthanams.ap.gov.in, released at 10 AM, six per login, and festival dates sell out in minutes. Under 5s go free. Babies under 1 get free priority darshan through the Supadam entrance, 12 to 6 PM, with parents only and the birth certificate.</p>
+				</div>
+				<ul class="tips">
+					<li>TTD rooms: Vishnu Nivasam opposite the station Rs 300 to 1,300, Srinivasam Rs 200 to 600.</li>
+					<li>Free Sarva Darshan is the fallback, with 6 to 18 hour waits at peak.</li>
+					<li>Avoid Vaikuntha Ekadasi (20 to 29 Dec 2026), Brahmotsavam and Sankranti.</li>
+				</ul>
+			</div>
+		</div>
+	</section>
+
+	<!-- GOA -->
+	<section class="trip" id="goa" role="tabpanel" aria-labelledby="tab-goa" hidden>
+		<div class="lede">
+			<h2>Goa, four days by car</h2>
+			<p>460 km on NH48 through Satara, Kolhapur and Belgaum: about 9 to 10 hours and Rs 605 in tolls each way. With a family, the car beats Goa taxis.</p>
+		</div>
+		<div class="grid2">
+			<div class="panel">
+				<h3>Day plan, based in South Goa</h3>
+				<ol class="days">
+					<li><span class="d">D1</span><p>Leave Pune at 6 AM, reach around 4 PM. Sunset at Colva or Benaulim.</p></li>
+					<li><span class="d">D2</span><p>Old Goa churches, a Fontainhas walk in Panjim, Miramar, and an evening Mandovi cruise (Rs 400 to 500 a head).</p></li>
+					<li><span class="d">D3</span><p>Palolem or Agonda and Cabo de Rama fort. Or a North day: Aguada, Candolim, Anjuna market on Saturdays.</p></li>
+					<li><span class="d">D4</span><p>Head home by 8 AM. The Belgaum to Kolhapur stretch is quick.</p></li>
+				</ol>
+				<ul class="tips">
+					<li>South Goa (Colva, Benaulim, Palolem) is quiet and suits small kids and parents. North Goa is markets and nightlife.</li>
+					<li>Staying 1 to 2 km inland saves 30 to 40%. A villa with a kitchen makes home cooking easy.</li>
+					<li>Tolls one way: Khed 95, Satara 70, Kagal 110, Belgaum 155, Londa 85, Mollem 90.</li>
+				</ul>
+			</div>
+			<div class="panel">
+				<h3>Cost for 4 adults, 3 nights</h3>
+				<div class="tablewrap"><table>
+					<thead><tr><th>Item</th><th class="num">Budget</th><th class="num">Mid-range</th></tr></thead>
+					<tbody>
+						<tr><td>Fuel and tolls, round trip</td><td class="num">7,800</td><td class="num">7,800</td></tr>
+						<tr><td>Stay, 2 rooms</td><td class="num">12,000</td><td class="num">24,000</td></tr>
+						<tr><td>Food, mostly home cooked</td><td class="num">2,500</td><td class="num">5,000</td></tr>
+						<tr><td>Local fuel, cruise, entries</td><td class="num">2,500</td><td class="num">4,000</td></tr>
+						<tr class="total"><td>Total</td><td class="num">Rs 24,800</td><td class="num">Rs 40,800</td></tr>
+					</tbody>
+				</table></div>
+				<div class="callout">
+					<b>Skip 22 Dec to 2 Jan</b>
+					<p>Hotels run at 95 to 100% and rates go up two to three times, so mid-range climbs past Rs 70,000. Early December or mid January onwards has the same weather at half the price.</p>
+				</div>
+				<div class="tablewrap"><table>
+					<thead><tr><th>Hotel band, December</th><th class="num">Per room per night</th></tr></thead>
+					<tbody>
+						<tr><td>Guesthouse</td><td class="num">Rs 2,000 to 4,000</td></tr>
+						<tr><td>Mid-range hotel</td><td class="num">Rs 6,000 to 10,000</td></tr>
+						<tr><td>Beachfront resort</td><td class="num">Rs 10,000 to 20,000</td></tr>
+					</tbody>
+				</table></div>
+			</div>
+		</div>
+	</section>
+
+	<!-- MAHARASHTRA -->
+	<section class="trip" id="mh" role="tabpanel" aria-labelledby="tab-mh" hidden>
+		<div class="lede">
+			<h2>Maharashtra, four circuits</h2>
+			<p>Costs are mid-range for 4 adults by car, with food mostly home cooked.</p>
+		</div>
+		<div class="circuits">
+			<article class="circuit pick">
+				<span class="tag">Start here</span>
+				<h3>Shirdi, Nashik, Trimbakeshwar</h3>
+				<span class="cost">Rs 12,400</span>
+				<p>2 days · 560 km. Flat, easy roads and a good first long run for a new car. Shirdi darshan is free or Rs 200 paid; Kakad aarti Rs 600.</p>
+			</article>
+			<article class="circuit pick">
+				<span class="tag">Best road trip</span>
+				<h3>Konkan coast into Goa</h3>
+				<span class="cost">Rs 51,000</span>
+				<p>5 to 6 days · ~1,150 km. Ganpatipule, Ratnagiri, Tarkarli and Malvan, then Goa. Down the coast on NH66, back fast on NH48. Budget version about Rs 32,000.</p>
+			</article>
+			<article class="circuit">
+				<h3>Ajanta, Ellora, Daulatabad</h3>
+				<span class="cost">Rs 21,000</span>
+				<p>3 days · 760 km. Ajanta is closed Mondays and Ellora Tuesdays. Ajanta has steep steps and heat, so it is hard with a baby carrier or anyone with balance trouble.</p>
+			</article>
+			<article class="circuit">
+				<h3>Mahabaleshwar, Panchgani</h3>
+				<span class="cost">Rs 10,500 to 12,500</span>
+				<p>1 to 2 days · 120 km, Rs 215 tolls. Strawberry season starts in December. Midweek rooms Rs 2,500 to 4,000, weekends double.</p>
+			</article>
+		</div>
+		<div class="panel">
+			<h3>Konkan coast legs</h3>
+			<div class="tablewrap"><table>
+				<thead><tr><th>Leg</th><th class="num">Distance</th><th class="num">Time</th></tr></thead>
+				<tbody>
+					<tr><td>Pune to Ganpatipule, via Tamhini and Chiplun</td><td class="num">~330 km</td><td class="num">7 to 8 h</td></tr>
+					<tr><td>Ganpatipule to Tarkarli</td><td class="num">170 km</td><td class="num">4 to 5 h</td></tr>
+					<tr><td>Tarkarli to Goa</td><td class="num">120 km</td><td class="num">3 h</td></tr>
+				</tbody>
+			</table></div>
+			<p>Ganpatipule rooms run Rs 1,500 to 3,500 and MTDC Tarkarli about Rs 3,150. Do not miss the Swayambhu Ganpati temple on the beach, Sindhudurg fort and a Malvani thali.</p>
+		</div>
+	</section>
+
+	<!-- WHEN -->
+	<section class="trip" id="when" role="tabpanel" aria-labelledby="tab-when" hidden>
+		<div class="lede">
+			<h2>A sensible order for the season</h2>
+			<p>Built around a fixed early-December Patna drive.</p>
+		</div>
+		<div class="timeline">
+			<div class="row"><span class="when">November</span><p>Shirdi and Nashik over a weekend. Easy roads to get used to the car.</p></div>
+			<div class="row"><span class="when">7 to 9 December</span><p>Pune to Patna by car. Leave on the 7th to arrive on the 9th. Come back before about 25 December, or by train, before the dense fog sets in.</p></div>
+			<div class="row"><span class="when">Late December</span><p>Avoid Tirumala (Vaikuntha Ekadasi crowds) and Goa (peak pricing).</p></div>
+			<div class="row"><span class="when">Mid to late January</span><p>Konkan coast and Goa road trip. Prices drop after 3 January and the weather is at its best.</p></div>
+			<div class="row"><span class="when">February</span><p>Tirupati by train. Book Rs 300 darshan around 24 November at 10 AM.</p></div>
+		</div>
+	</section>
+
+	<footer>
+		<button class="themebtn" type="button" id="themebtn">Switch to dark</button>
+		<p>Fuel, fares and tolls were read from public sources on 1 October 2026 and will move. Hotel and food lines are estimates. Check before you book.</p>
+		<ul>
+			<li><a href="https://www.yatra.com/distance-between/distance-from-pune-to-patna.html" rel="noopener">Pune to Patna distance, Yatra</a></li>
+			<li><a href="https://fuelprice.co.in/toll-charges-pune-to-patna-34893" rel="noopener">Pune to Patna tolls, FuelPrice</a></li>
+			<li><a href="https://www.goodreturns.in/petrol-price.html" rel="noopener">Petrol prices, Goodreturns</a></li>
+			<li><a href="https://www.confirmtkt.com/trains/pune-to-patna-train-tickets" rel="noopener">Pune to Patna trains, ConfirmTkt</a></li>
+			<li><a href="https://www.ixigo.com/flights/pune-patna-indigo-6e-flights" rel="noopener">Pune to Patna flights, ixigo</a></li>
+			<li><a href="https://www.pib.gov.in/PressReleseDetailm.aspx?PRID=2204143" rel="noopener">Fog driving advisory, PIB</a></li>
+			<li><a href="https://ttdevasthanams.ap.gov.in/" rel="noopener">TTD official booking</a></li>
+			<li><a href="https://travelheal.com/pune-to-goa-road-trip-routes-tolls-hidden-stops-2026/" rel="noopener">Pune to Goa tolls, TravelHeal</a></li>
+			<li><a href="https://happyfares.in/blog/goa-december-travel-guide-india-2026/" rel="noopener">Goa in December, HappyFares</a></li>
+			<li><a href="https://shirdisansthan.org.in/shirdi-paid-darshan-pass/" rel="noopener">Shirdi darshan pass</a></li>
+		</ul>
+	</footer>
+</div>
+
+<script>
+(function () {
+	// Tabs, remembering the last one opened.
+	var tabs = Array.prototype.slice.call(document.querySelectorAll('nav.tabs [role="tab"]'));
+	function show(id, focus) {
+		tabs.forEach(function (t) {
+			var on = t.getAttribute("aria-controls") === id;
+			t.setAttribute("aria-selected", on ? "true" : "false");
+			t.tabIndex = on ? 0 : -1;
+			document.getElementById(t.getAttribute("aria-controls")).hidden = !on;
+			if (on && focus) { t.focus(); }
+		});
+		try { localStorage.setItem("ptp-tab", id); } catch (e) {}
+	}
+	tabs.forEach(function (t, i) {
+		t.addEventListener("click", function () { show(t.getAttribute("aria-controls")); });
+		t.addEventListener("keydown", function (e) {
+			if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+				var n = (i + (e.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length;
+				show(tabs[n].getAttribute("aria-controls"), true);
+			}
+		});
+	});
+	var start = location.hash.replace("#", "");
+	if (!document.getElementById(start)) {
+		try { start = localStorage.getItem("ptp-tab") || "patna"; } catch (e) { start = "patna"; }
+	}
+	show(document.getElementById(start) ? start : "patna");
+
+	// Theme toggle on top of the system setting.
+	var root = document.documentElement, btn = document.getElementById("themebtn");
+	function isDark() {
+		var t = root.getAttribute("data-theme");
+		return t ? t === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
+	}
+	function label() { btn.textContent = isDark() ? "Switch to light" : "Switch to dark"; }
+	try { var saved = localStorage.getItem("ptp-theme"); if (saved) { root.setAttribute("data-theme", saved); } } catch (e) {}
+	label();
+	btn.addEventListener("click", function () {
+		var next = isDark() ? "light" : "dark";
+		root.setAttribute("data-theme", next);
+		try { localStorage.setItem("ptp-theme", next); } catch (e) {}
+		label();
+	});
+
+	// Patna drive calculator.
+	var FARES = { "3AC": 1925, "2AC": 2755, flightLow: 7200, flightHigh: 8800 };
+	var TOLLS = 2900; // FASTag, one way, plaza-by-plaza build-up (Rs 2,500 to 3,300)
+	var MISC = 800; // parking, tips, one way
+	var FOOD = { home: 120, out: 300 }; // per person per day
+	var DAYS = 3;
+	var food = "home";
+	var $ = function (id) { return document.getElementById(id); };
+	var rs = function (n) { return "Rs " + Math.round(n).toLocaleString("en-IN"); };
+	function num(id, fallback) { var v = parseFloat($(id).value); return isFinite(v) && v > 0 ? v : fallback; }
+
+	document.querySelectorAll(".seg button").forEach(function (b) {
+		b.addEventListener("click", function () {
+			food = b.getAttribute("data-food");
+			document.querySelectorAll(".seg button").forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+			calc();
+		});
+	});
+	["c-people", "c-kmpl", "c-fuel", "c-km", "c-room", "c-nights"].forEach(function (id) { $(id).addEventListener("input", calc); });
+
+	function calc() {
+		var people = Math.min(7, Math.max(1, Math.round(num("c-people", 3))));
+		var kmpl = num("c-kmpl", 14.5), fuel = num("c-fuel", 110), km = num("c-km", 1875);
+		var room = num("c-room", 2000), nights = Math.max(0, Math.round(parseFloat($("c-nights").value) || 0));
+		var rooms = Math.ceil(people / 3);
+		var lines = [
+			[ "Fuel", km / kmpl * fuel, Math.round(km / kmpl) + " L" ],
+			[ "Tolls", TOLLS, "FASTag" ],
+			[ "Hotels", room * rooms * nights, nights + " night" + (nights === 1 ? "" : "s") + ", " + rooms + " room" + (rooms === 1 ? "" : "s") ],
+			[ "Food", FOOD[food] * people * DAYS, food === "home" ? "home cooked" : "eating out" ],
+			[ "Misc", MISC, "parking, tips" ]
+		];
+		var one = lines.reduce(function (s, l) { return s + l[1]; }, 0);
+		$("r-one").textContent = rs(one);
+		$("r-rt").textContent = rs(one * 2);
+		var tb = $("r-table").tBodies[0];
+		tb.innerHTML = "";
+		lines.forEach(function (l) {
+			var tr = document.createElement("tr");
+			tr.innerHTML = "<td>" + l[0] + ' <span style="color:var(--muted);font-size:13px">' + l[2] + '</span></td><td class="num">' + rs(l[1]) + "</td>";
+			tb.appendChild(tr);
+		});
+
+		var modes = [
+			{ k: "Car", v: one * 2, cls: "car" },
+			{ k: "Train 3AC", v: FARES["3AC"] * people * 2 },
+			{ k: "Train 2AC", v: FARES["2AC"] * people * 2 },
+			{ k: "Flight", v: (FARES.flightLow + FARES.flightHigh) / 2 * people * 2 }
+		];
+		var max = Math.max.apply(null, modes.map(function (m) { return m.v; }));
+		var bars = $("r-bars");
+		bars.innerHTML = "";
+		modes.forEach(function (m) {
+			var d = document.createElement("div");
+			d.className = "bar" + (m.cls ? " " + m.cls : "");
+			d.innerHTML = "<span>" + m.k + '</span><span class="track"><span class="fill" style="width:' + (m.v / max * 100).toFixed(1) + '%"></span></span><span>' + rs(m.v) + "</span>";
+			bars.appendChild(d);
+		});
+		var ratio = one * 2 / modes[2].v;
+		$("r-verdict").textContent = ratio > 1.3
+			? "For " + people + (people === 1 ? " person" : " people") + ", driving costs about " + ratio.toFixed(1) + " times the 2AC train. It pays off only if you need the car at the other end."
+			: "For " + people + " people, driving is close to the 2AC fare, so the car is worth it if you are happy with three days at the wheel.";
+	}
+	calc();
+})();
+</script>
+</body>
+</html>
