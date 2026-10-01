@@ -16,3 +16,7 @@ Prices were checked on 1 October 2026 from public sources listed on the page. Ho
 Static site, no build step: `index.html`, `places.js` (popular places for instant search) and `fuel.json`.
 
 `fuel.json` holds state-wise petrol prices. A GitHub Action (`.github/workflows/fuel.yml`) runs `scripts/update_fuel.py` every morning at 7:00 IST and commits the new prices. Place search uses Photon, routing uses the OSRM demo server, both on OpenStreetMap data.
+
+## License
+
+Code is under the [MIT License](LICENSE). Fuel prices in fuel.json are read from goodreturns.in, and maps, places and routes come from Google Maps, Photon, OSRM and OpenStreetMap under their own terms. 
