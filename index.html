@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Pune Trip Planner</title>
 <meta name="description" content="Plan any road trip in India: enter a start and destination for route, drive time, night stops and full cost compared with train and flight. Plus Patna, Tirupati, Goa and Maharashtra guides.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%232f5d50'/%3E%3Cpath d='M14 54c6-10 22-8 24-18s-14-9-12-19' fill='none' stroke='%23fffaf2' stroke-width='7' stroke-linecap='round'/%3E%3Cpath d='M44 8a9 9 0 0 1 9 9c0 7-9 15-9 15s-9-8-9-15a9 9 0 0 1 9-9z' fill='%23c2541f'/%3E%3Ccircle cx='44' cy='17' r='3.4' fill='%23fffaf2'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="icon-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Source+Sans+3:wght@400;600;700&display=swap">
@@ -312,6 +314,8 @@ footer ul { margin: 0; padding-left: 18px; display: grid; gap: 2px; }
 	cursor: pointer;
 }
 
+.brand { display: flex; align-items: center; gap: 14px; }
+.brand .logo { width: clamp(44px, 9vw, 60px); height: auto; flex: 0 0 auto; }
 /* Planner */
 .planner-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 12px; align-items: end; }
 @media (max-width: 760px) { .planner-top { grid-template-columns: minmax(0, 1fr); } }
@@ -362,11 +366,11 @@ details.opts .fields { margin-top: 12px; grid-template-columns: repeat(3, minmax
 <div class="wrap">
 	<header class="top">
 		<span class="eyebrow">Winter 2026 to 2027 · from Pune</span>
-		<h1>Pune Trip Planner</h1>
+		<div class="brand"><svg class="logo" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><rect width="64" height="64" rx="16" fill="var(--road)"/><path d="M14 54c6-10 22-8 24-18s-14-9-12-19" fill="none" stroke="var(--surface)" stroke-width="7" stroke-linecap="round"/><path d="M14 54c6-10 22-8 24-18s-14-9-12-19" fill="none" stroke="var(--road)" stroke-width="1.6" stroke-dasharray="3.5 4" stroke-linecap="round"/><path d="M44 8a9 9 0 0 1 9 9c0 7-9 15-9 15s-9-8-9-15a9 9 0 0 1 9-9z" fill="var(--accent)"/><circle cx="44" cy="17" r="3.4" fill="var(--surface)"/></svg><h1>Pune Trip Planner</h1></div>
 		<p class="sub">Plan any road trip: pick a start and a destination and get the route, drive time, night stops and real cost. Plus ready guides for Patna, Tirupati, Goa and Maharashtra.</p>
 		<div class="stamp">
 			<span>Prices checked <b>1 Oct 2026</b></span>
-			<span>Petrol <b>Rs 102 to 115/L</b> on the routes</span>
+			<span>Petrol prices <b>update daily</b></span>
 			<span>Food assumed <b>mostly home cooked</b></span>
 		</div>
 	</header>
@@ -435,7 +439,13 @@ details.opts .fields { margin-top: 12px; grid-template-columns: repeat(3, minmax
 					<div class="box cost"><span class="eyebrow">One way</span><span class="big" id="r-one">-</span></div>
 					<div class="box cost"><span class="eyebrow">Round trip</span><span class="big" id="r-rt">-</span></div>
 				</div>
-				<div id="map" role="img" aria-label="Route map"></div>
+				<div class="seg" role="group" aria-label="Map" style="max-width:320px">
+					<button type="button" data-map="google" aria-pressed="true">Google Maps</button>
+					<button type="button" data-map="osm" aria-pressed="false">OpenStreetMap</button>
+				</div>
+				<iframe id="gframe" title="Route on Google Maps" loading="lazy" referrerpolicy="no-referrer-when-downgrade" style="width:100%;height:340px;border:1px solid var(--line);border-radius:12px"></iframe>
+				<div id="map" role="img" aria-label="Route map" hidden></div>
+				<p id="fuelnote" style="font-size:14px;color:var(--muted)"></p>
 				<p id="s-plan"></p>
 				<div class="grid2">
 					<div style="display:grid;gap:10px;min-width:0">
@@ -667,12 +677,14 @@ details.opts .fields { margin-top: 12px; grid-template-columns: repeat(3, minmax
 			<li><a href="https://travelheal.com/pune-to-goa-road-trip-routes-tolls-hidden-stops-2026/" rel="noopener">Pune to Goa tolls, TravelHeal</a></li>
 			<li><a href="https://happyfares.in/blog/goa-december-travel-guide-india-2026/" rel="noopener">Goa in December, HappyFares</a></li>
 			<li><a href="https://shirdisansthan.org.in/shirdi-paid-darshan-pass/" rel="noopener">Shirdi darshan pass</a></li>
+			<li>Daily petrol prices from <a href="https://www.goodreturns.in/petrol-price.html" rel="noopener">Goodreturns</a>, refreshed every morning</li>
 			<li>Place search by <a href="https://photon.komoot.io/" rel="noopener">Photon</a> and routes by <a href="https://project-osrm.org/" rel="noopener">OSRM</a>, both on <a href="https://www.openstreetmap.org/copyright" rel="noopener">OpenStreetMap</a> data</li>
 		</ul>
 	</footer>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="places.js"></script>
 <script>
 (function () {
 	// Tabs, remembering the last one opened.
@@ -740,16 +752,44 @@ details.opts .fields { margin-top: 12px; grid-template-columns: repeat(3, minmax
 		var rest = [ p.city !== main ? p.city : null, p.district || p.county, p.state ].filter(function (x, i, a) { return x && x !== main && a.indexOf(x) === i; }).join(", ");
 		return { main: main, rest: rest, full: main + (rest ? ", " + rest : "") };
 	}
-	function search(q) {
+	// Instant matches from the built-in list of popular places.
+	function localMatches(q) {
+		var n = q.toLowerCase().trim(), starts = [], contains = [];
+		(window.PTP_PLACES || []).forEach(function (r) {
+			var name = r[0].toLowerCase(), alias = (r[4] || "").toLowerCase();
+			var item = { name: r[0], detail: r[1] + (r[4] ? " · " + r[4] : ""), full: r[0] + ", " + r[1], state: r[1], lat: r[2], lon: r[3] };
+			var words = (name + " " + alias).split(/\s+/);
+			if (name.indexOf(n) === 0 || words.some(function (w) { return w.indexOf(n) === 0; })) { starts.push(item); }
+			else if (name.indexOf(n) > 0) { contains.push(item); }
+		});
+		return starts.concat(contains).slice(0, 6);
+	}
+	function merge(a, b) {
+		var seen = {}, out = [];
+		a.concat(b).forEach(function (x) { var k = x.name.toLowerCase() + "|" + (x.state || "").toLowerCase(); if (!seen[k]) { seen[k] = 1; out.push(x); } });
+		return out.slice(0, 8);
+	}
+	function search(q, submit) {
 		var key = "q:" + q.toLowerCase();
 		if (cache[key]) { return Promise.resolve(cache[key]); }
-		var url = "https://photon.komoot.io/api/?limit=6&bbox=68,6,98,37.5&q=" + encodeURIComponent(q);
+		var url = "https://photon.komoot.io/api/?limit=8&bbox=68,6,98,37.5&osm_tag=place&q=" + encodeURIComponent(q);
 		return fetch(url).then(function (r) { if (!r.ok) { throw new Error("search " + r.status); } return r.json(); }).then(function (d) {
-			var out = (d.features || []).filter(function (f) { return (f.properties || {}).countrycode === "IN"; }).map(function (f) {
-				var l = placeLabel(f); return { name: l.main, detail: l.rest, full: l.full, lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0] };
-			});
-			cache[key] = out; saveCache(); return out;
-		});
+			var seen = {};
+			return (d.features || []).filter(function (f) { return (f.properties || {}).countrycode === "IN"; }).map(function (f) {
+				var l = placeLabel(f); return { name: l.main, detail: l.rest, full: l.full, state: (f.properties || {}).state || "", lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0] };
+			}).filter(function (x) { if (!x.name || seen[x.full]) { return false; } seen[x.full] = 1; return true; }).slice(0, 7);
+		}).catch(function () { return []; }).then(function (out) {
+			if (out.length || !submit) { return out; }
+			// Backup: OpenStreetMap Nominatim.
+			return fetch("https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=7&countrycodes=in&q=" + encodeURIComponent(q))
+				.then(function (r) { return r.ok ? r.json() : []; }).then(function (d) {
+					return (d || []).map(function (x) {
+						var a = x.address || {}, main = x.name || (x.display_name || "").split(",")[0];
+						var rest = [ a.state_district || a.county, a.state ].filter(Boolean).join(", ");
+						return { name: main, detail: rest, full: main + (rest ? ", " + rest : ""), state: a.state || "", lat: +x.lat, lon: +x.lon };
+					});
+				}).catch(function () { return []; });
+		}).then(function (out) { if (out.length) { cache[key] = out; saveCache(); } return out; });
 	}
 
 	// Autocomplete for both boxes.
@@ -757,6 +797,11 @@ details.opts .fields { margin-top: 12px; grid-template-columns: repeat(3, minmax
 		var input = $(which), list = $(which + "-list"), timer = null, items = [], active = -1;
 		function close() { list.hidden = true; input.setAttribute("aria-expanded", "false"); active = -1; }
 		function pick(i) { var it = items[i]; if (!it) { return; } places[which] = it; input.value = it.name; close(); }
+		function hint(msg) {
+			if (document.activeElement !== input) { return; }
+			list.innerHTML = '<li aria-disabled="true" style="color:var(--muted);cursor:default"></li>';
+			list.firstChild.textContent = msg; list.hidden = false;
+		}
 		function render() {
 			list.innerHTML = "";
 			items.forEach(function (it, i) {
@@ -774,7 +819,16 @@ details.opts .fields { margin-top: 12px; grid-template-columns: repeat(3, minmax
 			places[which] = null; clearTimeout(timer);
 			var q = input.value.trim();
 			if (q.length < 2) { items = []; render(); return; }
-			timer = setTimeout(function () { search(q).then(function (r) { if (input.value.trim() === q && document.activeElement === input) { items = r; active = -1; render(); } }).catch(function () {}); }, 300);
+			var local = localMatches(q);
+			items = local; active = -1;
+			if (local.length) { render(); } else { hint("Searching..."); }
+			timer = setTimeout(function () {
+				search(q).then(function (r) {
+					if (input.value.trim() !== q || document.activeElement !== input) { return; }
+					items = merge(local, r); active = -1;
+					if (items.length) { render(); } else { hint("No match yet. Keep typing, or add the state."); }
+				}).catch(function () {});
+			}, 250);
 		});
 		input.addEventListener("keydown", function (e) {
 			if (list.hidden) { return; }
@@ -790,7 +844,9 @@ details.opts .fields { margin-top: 12px; grid-template-columns: repeat(3, minmax
 		if (places[which]) { return Promise.resolve(places[which]); }
 		var q = $(which).value.trim();
 		if (!q) { return Promise.reject(new Error("Enter a " + (which === "from" ? "starting point" : "destination") + ".")); }
-		return search(q).then(function (r) {
+		var local = localMatches(q).filter(function (x) { return x.name.toLowerCase() === q.toLowerCase() || x.full.toLowerCase() === q.toLowerCase(); });
+		if (local.length) { places[which] = local[0]; return Promise.resolve(local[0]); }
+		return search(q, true).then(function (r) {
 			if (!r.length) { throw new Error("Couldn't find \"" + q + "\". Try adding the state, for example \"" + q + ", Kerala\"."); }
 			places[which] = r[0]; return r[0];
 		});
@@ -812,6 +868,27 @@ details.opts .fields { margin-top: 12px; grid-template-columns: repeat(3, minmax
 		return 2 * R * Math.asin(Math.sqrt(x));
 	}
 
+	// Live petrol prices: fuel.json is refreshed every morning by a GitHub Action.
+	var FUEL = null, fuelTouched = false;
+	fetch("fuel.json", { cache: "no-cache" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) { FUEL = d; render(); }).catch(function () {});
+	$("c-fuel").addEventListener("input", function () { fuelTouched = true; });
+	function statePrice(st) {
+		if (!FUEL || !st) { return null; }
+		var norm = function (x) { return x.toLowerCase().replace(/&/g, "and").replace(/[^a-z]/g, ""); };
+		var want = norm(st), hit = null;
+		Object.keys(FUEL.states).forEach(function (k) { if (norm(k) === want) { hit = { state: k, price: FUEL.states[k] }; } });
+		return hit;
+	}
+	function liveFuel() {
+		var a = statePrice(places.from && places.from.state), b = statePrice(places.to && places.to.state);
+		var got = [ a, b ].filter(Boolean);
+		if (!got.length) { return null; }
+		var avg = got.reduce(function (s, x) { return s + x.price; }, 0) / got.length;
+		var names = got.map(function (x) { return x.state + " Rs " + x.price.toFixed(2); });
+		if (a && b && a.state === b.state) { names = [ names[0] ]; }
+		return { price: Math.round(avg * 100) / 100, text: names.join(", ") };
+	}
+
 	var map = null, layer = null;
 	function drawMap(a, b, line) {
 		if (!window.L) { $("map").hidden = true; return; }
@@ -830,10 +907,28 @@ details.opts .fields { margin-top: 12px; grid-template-columns: repeat(3, minmax
 		setTimeout(function () { map.invalidateSize(); map.fitBounds(poly.getBounds(), { padding: [ 24, 24 ] }); }, 50);
 	}
 
+	var mapMode = "google";
+	try { mapMode = localStorage.getItem("ptp-map") || "google"; } catch (e) {}
+	function showGoogle() {
+		var f = $("gframe");
+		if (f.dataset.src && f.getAttribute("src") !== f.dataset.src) { f.setAttribute("src", f.dataset.src); }
+	}
+	function setMap(mode) {
+		mapMode = mode;
+		try { localStorage.setItem("ptp-map", mode); } catch (e) {}
+		document.querySelectorAll("[data-map]").forEach(function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-map") === mode ? "true" : "false"); });
+		$("gframe").hidden = mode !== "google";
+		$("map").hidden = mode !== "osm";
+		if (mode === "google") { showGoogle(); } else if (map && layer) { setTimeout(function () { map.invalidateSize(); }, 30); }
+	}
+	document.querySelectorAll("[data-map]").forEach(function (b) { b.addEventListener("click", function () { setMap(b.getAttribute("data-map")); }); });
+
 	function render() {
 		if (!route) { return; }
 		var a = places.from, b = places.to;
 		var people = Math.min(7, Math.max(1, Math.round(num("c-people", 4))));
+		var live = liveFuel();
+		if (live && !fuelTouched) { $("c-fuel").value = live.price; }
 		var kmpl = num("c-kmpl", 14.5) || 14.5, fuel = num("c-fuel", 108), room = num("c-room", 2000);
 		var perDay = num("c-day", 9) || 9, tollKm = num("c-toll", 1.5);
 		var roadH = route.h * ROAD_FACTOR;
@@ -842,7 +937,7 @@ details.opts .fields { margin-top: 12px; grid-template-columns: repeat(3, minmax
 		var rooms = Math.ceil(people / 3);
 		var foodDays = Math.max(1, roadH > 6 ? days : 0.5);
 		var lines = [
-			[ "Fuel", route.km / kmpl * fuel, Math.round(route.km / kmpl) + " L at Rs " + fuel ],
+			[ "Fuel", route.km / kmpl * fuel, Math.round(route.km / kmpl) + " L at Rs " + fuel + (live && !fuelTouched ? ", today's price" : "") ],
 			[ "Tolls", route.km * tollKm, "about Rs " + tollKm + "/km" ],
 			[ "Hotels on the way", room * rooms * nights, nights ? nights + " night" + (nights > 1 ? "s" : "") + ", " + rooms + " room" + (rooms > 1 ? "s" : "") : "none needed" ],
 			[ "Food", FOOD[food] * people * foodDays, food === "home" ? "home cooked" : "eating out" ],
@@ -891,6 +986,11 @@ details.opts .fields { margin-top: 12px; grid-template-columns: repeat(3, minmax
 			: ratio < 0.8
 				? "For " + who + ", the car is the cheaper option, about " + Math.round((1 - ratio) * 100) + "% less than 2AC."
 				: "For " + who + ", driving costs about the same as 2AC, so pick on comfort and time.";
+		$("fuelnote").textContent = live && !fuelTouched
+			? "Petrol today (" + FUEL.updated + "): " + live.text + ". Using Rs " + live.price + "/L. Change it in Trip settings."
+			: fuelTouched ? "Using your petrol price of Rs " + fuel + "/L." : "";
+		$("gframe").dataset.src = "https://maps.google.com/maps?saddr=" + a.lat + "," + a.lon + "&daddr=" + b.lat + "," + b.lon + "&output=embed";
+		if (mapMode === "google") { showGoogle(); }
 		$("gmaps").href = "https://www.google.com/maps/dir/?api=1&travelmode=driving&origin=" + a.lat + "," + a.lon + "&destination=" + b.lat + "," + b.lon;
 	}
 
@@ -901,7 +1001,7 @@ details.opts .fields { margin-top: 12px; grid-template-columns: repeat(3, minmax
 			status("Finding the road route...");
 			return getRoute(p[0], p[1]).then(function (r) {
 				route = r; $("results").hidden = false; status("");
-				render(); drawMap(p[0], p[1], r.line);
+				$("map").hidden = false; render(); drawMap(p[0], p[1], r.line); setMap(mapMode);
 				try { localStorage.setItem("ptp-last", JSON.stringify(places)); } catch (e) {}
 			});
 		}).catch(function (e) { status(e && e.message ? e.message : "Something went wrong. Check your connection and try again.", true); })
@@ -919,10 +1019,10 @@ details.opts .fields { margin-top: 12px; grid-template-columns: repeat(3, minmax
 	document.querySelectorAll("[data-plan]").forEach(function (c) {
 		c.addEventListener("click", function () { $("from").value = "Pune"; places.from = null; $("to").value = c.getAttribute("data-plan"); places.to = null; show("plan"); window.scrollTo(0, 0); plan(); });
 	});
-	document.querySelectorAll(".seg button").forEach(function (b) {
+	document.querySelectorAll("[data-food]").forEach(function (b) {
 		b.addEventListener("click", function () {
 			food = b.getAttribute("data-food");
-			document.querySelectorAll(".seg button").forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+			document.querySelectorAll("[data-food]").forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
 			render();
 		});
 	});
