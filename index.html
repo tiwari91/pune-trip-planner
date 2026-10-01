@@ -949,15 +949,21 @@ details.opts .fields { margin-top: 12px; grid-template-columns: repeat(3, minmax
 		if (best && bd < 45) { return Promise.resolve({ name: best[0], state: best[1], lat: best[2], lon: best[3] }); }
 		var key = pt.lat.toFixed(2) + "," + pt.lon.toFixed(2);
 		if (reverseCache[key]) { return reverseCache[key]; }
-		reverseCache[key] = fetch("https://photon.komoot.io/reverse?limit=1&lat=" + pt.lat + "&lon=" + pt.lon + "&osm_tag=place")
+		reverseCache[key] = fetch("https://photon.komoot.io/reverse?limit=1&lat=" + pt.lat + "&lon=" + pt.lon)
 			.then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
 				var f = d && d.features && d.features[0], pr = (f && f.properties) || {};
-				var name = pr.name || pr.city || pr.county;
-				return name ? { name: name, state: pr.state || "", lat: pt.lat, lon: pt.lon } : { name: "the highway near km " + pt.km, state: "", lat: pt.lat, lon: pt.lon };
-			}).catch(function () { return { name: "the highway near km " + pt.km, state: "", lat: pt.lat, lon: pt.lon }; });
+				var name = pr.city || pr.town || pr.district || pr.county || (best && bd < 120 ? best[0] : "");
+				name = (name || "").replace(/ (Tahsil|Tehsil|Taluka|Taluk|Block)$/, "");
+				return { name: name || "km " + pt.km + " on the route", state: pr.state || "", lat: pt.lat, lon: pt.lon };
+			}).catch(function () {
+				return { name: best && bd < 120 ? best[0] : "km " + pt.km + " on the route", state: best && bd < 120 ? best[1] : "", lat: pt.lat, lon: pt.lon };
+			});
 		return reverseCache[key];
 	}
 	function where(p) { return encodeURIComponent(p.name + (p.state ? ", " + p.state : "")); }
+	// Search centred on the exact point, so Google never falls back to the viewer's own location.
+	function nearSrc(what, p, z) { return gEmbed("q=" + encodeURIComponent(what) + "&ll=" + ll(p) + "&z=" + (z || 12)); }
+	function nearOpen(what, p, z) { return "https://www.google.com/maps/search/" + encodeURIComponent(what) + "/@" + ll(p) + "," + (z || 12) + "z"; }
 	function setLens(k) {
 		var L = lenses.filter(function (x) { return x.k === k; })[0] || lenses[0];
 		if (!L) { return; }
@@ -974,10 +980,10 @@ details.opts .fields { margin-top: 12px; grid-template-columns: repeat(3, minmax
 			src: gEmbed("saddr=" + ll(a) + "&daddr=" + via.replace(/^\+to:/, "") + (stops.length ? "+to:" : "") + ll(b)),
 			open: "https://www.google.com/maps/dir/?api=1&travelmode=driving&origin=" + ll(a) + "&destination=" + ll(b) + (stops.length ? "&waypoints=" + stops.map(ll).join("%7C") : "") } ];
 		stops.forEach(function (s, i) {
-			lenses.push({ k: "stay" + i, label: "Night " + (i + 1) + " hotels", title: "Hotels near " + s.name, src: gEmbed("q=hotels+near+" + where(s)), open: gOpen("q=hotels+near+" + where(s)) });
+			lenses.push({ k: "stay" + i, label: "Night " + (i + 1) + " hotels", title: "Hotels near " + s.name, src: nearSrc("hotels", s), open: nearOpen("hotels", s) });
 		});
-		[ [ "todo", "Things to do", "tourist attractions in " ], [ "hotels", "Hotels at " + b.name, "hotels in " ], [ "food", "Veg food", "vegetarian restaurants in " ], [ "fuel", "Petrol pumps", "petrol pump near " ] ].forEach(function (x) {
-			lenses.push({ k: x[0], label: x[1], title: x[2].charAt(0).toUpperCase() + x[2].slice(1) + b.name, src: gEmbed("q=" + encodeURIComponent(x[2]) + where(b)), open: gOpen("q=" + encodeURIComponent(x[2]) + where(b)) });
+		[ [ "todo", "Things to do", "tourist attractions", "Things to do in ", 11 ], [ "hotels", "Hotels at " + b.name, "hotels", "Hotels in ", 13 ], [ "food", "Veg food", "vegetarian restaurants", "Vegetarian food in ", 13 ], [ "fuel", "Petrol pumps", "petrol pump", "Petrol pumps near ", 12 ] ].forEach(function (x) {
+			lenses.push({ k: x[0], label: x[1], title: x[3] + b.name, src: nearSrc(x[2], b, x[4]), open: nearOpen(x[2], b, x[4]) });
 		});
 		var bar = $("lens"); bar.innerHTML = "";
 		lenses.forEach(function (L) {
