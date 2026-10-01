@@ -4,10 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Pune Trip Planner</title>
-<meta name="description" content="Road and rail trip plans from Pune: Patna by car, Tirupati, Goa and Maharashtra circuits, with 2026 costs and a drive cost calculator.">
+<meta name="description" content="Plan any road trip in India: enter a start and destination for route, drive time, night stops and full cost compared with train and flight. Plus Patna, Tirupati, Goa and Maharashtra guides.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Source+Sans+3:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
 <style>
 :root {
 	--bg: #f6f1e8;
@@ -278,8 +279,8 @@ input:focus-visible, select:focus-visible { outline: 3px solid var(--road); outl
 }
 .bars { display: grid; gap: 8px; }
 .bar { display: grid; grid-template-columns: 92px minmax(0, 1fr) auto; gap: 10px; align-items: center; font-size: 14px; font-variant-numeric: tabular-nums; }
-.bar .track { height: 12px; background: var(--surface-2); border-radius: 6px; overflow: hidden; }
-.bar .fill { height: 100%; background: var(--accent); border-radius: 6px; }
+.bar .track { display: block; height: 12px; background: var(--surface-2); border-radius: 6px; overflow: hidden; }
+.bar .fill { display: block; height: 100%; background: var(--accent); border-radius: 6px; }
 .bar.car .fill { background: var(--road); }
 .verdict { font-size: 15px; }
 
@@ -310,6 +311,51 @@ footer ul { margin: 0; padding-left: 18px; display: grid; gap: 2px; }
 	padding: 8px 14px;
 	cursor: pointer;
 }
+
+/* Planner */
+.planner-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 12px; align-items: end; }
+@media (max-width: 760px) { .planner-top { grid-template-columns: minmax(0, 1fr); } }
+.place { position: relative; display: grid; gap: 4px; font-size: 14px; font-weight: 600; }
+.place input {
+	font: 600 17px/1.2 "Source Sans 3", system-ui, sans-serif;
+	color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 10px;
+	padding: 12px 12px; width: 100%;
+}
+.place input:focus-visible { outline: 3px solid var(--road); outline-offset: 1px; }
+.sugg {
+	position: absolute; top: 100%; left: 0; right: 0; z-index: 20; margin: 4px 0 0; padding: 4px 0; list-style: none;
+	background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 10px 24px rgba(0,0,0,.15);
+	max-height: 260px; overflow-y: auto;
+}
+.sugg li { padding: 9px 12px; cursor: pointer; font-weight: 400; display: grid; gap: 1px; }
+.sugg li small { color: var(--muted); font-size: 13px; }
+.sugg li[aria-selected="true"], .sugg li:hover { background: var(--surface-2); }
+.go {
+	font: 700 16px/1 "Source Sans 3", system-ui, sans-serif; color: var(--surface); background: var(--road);
+	border: 0; border-radius: 10px; padding: 14px 22px; cursor: pointer; white-space: nowrap;
+}
+.go:disabled { opacity: .6; cursor: progress; }
+.go:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips button {
+	font: 600 14px/1 "Source Sans 3", system-ui, sans-serif; color: var(--fg); background: var(--surface);
+	border: 1px dashed var(--line); border-radius: 999px; padding: 8px 12px; cursor: pointer;
+}
+details.opts summary { cursor: pointer; font-weight: 600; font-size: 15px; }
+details.opts .fields { margin-top: 12px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 640px) { details.opts .fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+#map { height: 340px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); }
+@media (max-width: 560px) { #map { height: 260px; } }
+.status { font-size: 15px; color: var(--muted); min-height: 1.4em; }
+.status.err { color: var(--accent); font-weight: 600; }
+.summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 640px) { .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.summary .box { background: var(--road-soft); border-radius: 10px; padding: 12px; display: grid; gap: 2px; }
+.summary .big { font-family: "Bricolage Grotesque", Georgia, serif; font-size: clamp(20px, 4.4vw, 26px); font-weight: 800; font-variant-numeric: tabular-nums; color: var(--road); }
+.summary .box.cost { background: var(--accent-soft); }
+.summary .box.cost .big { color: var(--accent); }
+#results[hidden] { display: none !important; }
+.leaflet-container { font: inherit; }
 </style>
 </head>
 <body>
@@ -317,7 +363,7 @@ footer ul { margin: 0; padding-left: 18px; display: grid; gap: 2px; }
 	<header class="top">
 		<span class="eyebrow">Winter 2026 to 2027 · from Pune</span>
 		<h1>Pune Trip Planner</h1>
-		<p class="sub">Four trips with routes, day plans and what they really cost: Patna by car, Tirupati, Goa and a pick of Maharashtra circuits.</p>
+		<p class="sub">Plan any road trip: pick a start and a destination and get the route, drive time, night stops and real cost. Plus ready guides for Patna, Tirupati, Goa and Maharashtra.</p>
 		<div class="stamp">
 			<span>Prices checked <b>1 Oct 2026</b></span>
 			<span>Petrol <b>Rs 102 to 115/L</b> on the routes</span>
@@ -326,15 +372,90 @@ footer ul { margin: 0; padding-left: 18px; display: grid; gap: 2px; }
 	</header>
 
 	<nav class="tabs" role="tablist" aria-label="Trips">
-		<button role="tab" id="tab-patna" aria-controls="patna" aria-selected="true">Patna by car</button>
+		<button role="tab" id="tab-plan" aria-controls="plan" aria-selected="true">Plan any trip</button>
+		<button role="tab" id="tab-patna" aria-controls="patna" aria-selected="false">Patna by car</button>
 		<button role="tab" id="tab-tirupati" aria-controls="tirupati" aria-selected="false">Tirupati</button>
 		<button role="tab" id="tab-goa" aria-controls="goa" aria-selected="false">Goa</button>
 		<button role="tab" id="tab-mh" aria-controls="mh" aria-selected="false">Maharashtra</button>
 		<button role="tab" id="tab-when" aria-controls="when" aria-selected="false">When to go</button>
 	</nav>
 
+	<!-- PLANNER -->
+	<section class="trip" id="plan" role="tabpanel" aria-labelledby="tab-plan">
+		<div class="lede">
+			<h2>Where are you going?</h2>
+			<p>Type a start and a destination anywhere in India. The planner finds the road route and works out drive time, night stops and the full cost, then compares it with the train and a flight.</p>
+		</div>
+		<div class="panel calc">
+			<form class="planner-top" id="planform" autocomplete="off">
+				<label class="place">From
+					<input id="from" type="text" placeholder="e.g. Pune" value="Pune" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="from-list">
+					<ul class="sugg" id="from-list" role="listbox" hidden></ul>
+				</label>
+				<label class="place">To
+					<input id="to" type="text" placeholder="e.g. Patna, Goa, Ooty" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="to-list">
+					<ul class="sugg" id="to-list" role="listbox" hidden></ul>
+				</label>
+				<button class="go" id="go" type="submit">Calculate</button>
+			</form>
+			<div class="chips" aria-label="Quick picks">
+				<button type="button" data-to="Patna">Patna</button>
+				<button type="button" data-to="Panaji, Goa">Goa</button>
+				<button type="button" data-to="Tirupati">Tirupati</button>
+				<button type="button" data-to="Shirdi">Shirdi</button>
+				<button type="button" data-to="Mahabaleshwar">Mahabaleshwar</button>
+				<button type="button" data-to="Hampi">Hampi</button>
+			</div>
+			<details class="opts">
+				<summary>Trip settings</summary>
+				<div class="fields">
+					<label class="f">People (adults)<input type="number" id="c-people" min="1" max="7" value="4"></label>
+					<label class="f">Mileage, km/L<span class="hint">13.5 loaded, 15.5 light</span><input type="number" id="c-kmpl" min="5" max="30" step="0.5" value="14.5"></label>
+					<label class="f">Petrol, Rs/L<input type="number" id="c-fuel" min="80" max="140" step="0.5" value="108"></label>
+					<label class="f">Hotel per room per night<input type="number" id="c-room" min="500" max="15000" step="100" value="2000"></label>
+					<label class="f">Max driving per day<select id="c-day"><option value="7">7 hours</option><option value="9" selected>9 hours</option><option value="11">11 hours</option><option value="14">14 hours, two drivers</option></select></label>
+					<label class="f">Tolls, Rs per km<span class="hint">1.3 to 1.6 on highways</span><input type="number" id="c-toll" min="0" max="4" step="0.1" value="1.5"></label>
+				</div>
+				<div class="f" style="display:grid;gap:6px;margin-top:12px">
+					<span style="font-size:14px;font-weight:600">Food on the way</span>
+					<div class="seg" role="group" aria-label="Food">
+						<button type="button" data-food="home" aria-pressed="true">Home cooked</button>
+						<button type="button" data-food="out" aria-pressed="false">Eat out</button>
+					</div>
+				</div>
+			</details>
+			<p class="status" id="status" role="status" aria-live="polite"></p>
+		</div>
+
+		<div id="results" hidden>
+			<div class="panel" style="gap:16px">
+				<div class="summary">
+					<div class="box"><span class="eyebrow">Distance</span><span class="big" id="s-km">-</span></div>
+					<div class="box"><span class="eyebrow">On the road</span><span class="big" id="s-time">-</span></div>
+					<div class="box cost"><span class="eyebrow">One way</span><span class="big" id="r-one">-</span></div>
+					<div class="box cost"><span class="eyebrow">Round trip</span><span class="big" id="r-rt">-</span></div>
+				</div>
+				<div id="map" role="img" aria-label="Route map"></div>
+				<p id="s-plan"></p>
+				<div class="grid2">
+					<div style="display:grid;gap:10px;min-width:0">
+						<h3>Cost one way</h3>
+						<div class="tablewrap"><table id="r-table"><tbody></tbody></table></div>
+					</div>
+					<div style="display:grid;gap:10px;min-width:0">
+						<h3>Round trip compared</h3>
+						<div class="bars" id="r-bars"></div>
+						<p class="verdict" id="r-verdict"></p>
+						<p style="font-size:14px;color:var(--muted)">Train and flight figures are estimates from distance (3AC about Rs 1.1/km, 2AC about Rs 1.6/km). Check IRCTC and airline sites for the real fare.</p>
+						<a id="gmaps" href="#" target="_blank" rel="noopener">Open this route in Google Maps</a>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
 	<!-- PATNA -->
-	<section class="trip" id="patna" role="tabpanel" aria-labelledby="tab-patna">
+	<section class="trip" id="patna" role="tabpanel" aria-labelledby="tab-patna" hidden>
 		<div class="lede">
 			<h2>Pune to Patna, three days on the road</h2>
 			<p>About 1,850 to 1,900 km and 30 to 33 hours of actual driving. Split it with two night stops and drive in daylight only.</p>
@@ -354,31 +475,21 @@ footer ul { margin: 0; padding-left: 18px; display: grid; gap: 2px; }
 				</div>
 			</div>
 
-			<div class="panel calc" aria-labelledby="calc-h">
-				<h3 id="calc-h">Drive cost calculator</h3>
-				<div class="fields">
-					<label class="f">People (adults)<input type="number" id="c-people" min="1" max="7" value="3"></label>
-					<label class="f">Mileage, km/L<span class="hint">13.5 loaded, 15.5 light</span><input type="number" id="c-kmpl" min="5" max="30" step="0.5" value="14.5"></label>
-					<label class="f">Petrol, Rs/L<input type="number" id="c-fuel" min="80" max="140" step="0.5" value="110"></label>
-					<label class="f">Distance, km<input type="number" id="c-km" min="1500" max="2200" step="10" value="1875"></label>
-					<label class="f">Hotel per room per night<input type="number" id="c-room" min="500" max="8000" step="100" value="2000"></label>
-					<label class="f">Night stops<input type="number" id="c-nights" min="0" max="4" value="2"></label>
-				</div>
-				<div class="f" style="display:grid;gap:6px">
-					<span style="font-size:14px;font-weight:600">Food on the way</span>
-					<div class="seg" role="group" aria-label="Food">
-						<button type="button" data-food="home" aria-pressed="true">Home cooked</button>
-						<button type="button" data-food="out" aria-pressed="false">Eat out</button>
-					</div>
-				</div>
-				<div class="result" aria-live="polite">
-					<div class="box"><span class="eyebrow">One way</span><span class="big" id="r-one">-</span></div>
-					<div class="box"><span class="eyebrow">Round trip</span><span class="big" id="r-rt">-</span></div>
-				</div>
-				<div class="tablewrap"><table id="r-table"><tbody></tbody></table></div>
-				<h3>Round trip compared</h3>
-				<div class="bars" id="r-bars"></div>
-				<p class="verdict" id="r-verdict"></p>
+			<div class="panel">
+				<h3>Cost for 3 adults, one way</h3>
+				<div class="tablewrap"><table>
+					<thead><tr><th>Item</th><th class="num">Budget</th><th class="num">Mid-range</th></tr></thead>
+					<tbody>
+						<tr><td>Fuel</td><td class="num">13,100</td><td class="num">14,000</td></tr>
+						<tr><td>Tolls, FASTag</td><td class="num">2,500</td><td class="num">3,300</td></tr>
+						<tr><td>Hotels, 2 nights, 1 room</td><td class="num">3,000</td><td class="num">5,000</td></tr>
+						<tr><td>Food, home cooked</td><td class="num">800</td><td class="num">1,500</td></tr>
+						<tr><td>Misc</td><td class="num">600</td><td class="num">1,000</td></tr>
+						<tr class="total"><td>One way</td><td class="num">Rs 20,000</td><td class="num">Rs 24,800</td></tr>
+					</tbody>
+				</table></div>
+				<p>Round trip about Rs 40,000 to 50,000. The same three people go both ways on 2AC for about Rs 16,500, so drive only if you need the car in Bihar.</p>
+				<button class="go" type="button" data-plan="Patna" style="justify-self:start">Change the numbers in the planner</button>
 			</div>
 		</div>
 	</section>
@@ -556,10 +667,12 @@ footer ul { margin: 0; padding-left: 18px; display: grid; gap: 2px; }
 			<li><a href="https://travelheal.com/pune-to-goa-road-trip-routes-tolls-hidden-stops-2026/" rel="noopener">Pune to Goa tolls, TravelHeal</a></li>
 			<li><a href="https://happyfares.in/blog/goa-december-travel-guide-india-2026/" rel="noopener">Goa in December, HappyFares</a></li>
 			<li><a href="https://shirdisansthan.org.in/shirdi-paid-darshan-pass/" rel="noopener">Shirdi darshan pass</a></li>
+			<li>Place search by <a href="https://photon.komoot.io/" rel="noopener">Photon</a> and routes by <a href="https://project-osrm.org/" rel="noopener">OSRM</a>, both on <a href="https://www.openstreetmap.org/copyright" rel="noopener">OpenStreetMap</a> data</li>
 		</ul>
 	</footer>
 </div>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <script>
 (function () {
 	// Tabs, remembering the last one opened.
@@ -585,9 +698,9 @@ footer ul { margin: 0; padding-left: 18px; display: grid; gap: 2px; }
 	});
 	var start = location.hash.replace("#", "");
 	if (!document.getElementById(start)) {
-		try { start = localStorage.getItem("ptp-tab") || "patna"; } catch (e) { start = "patna"; }
+		try { start = localStorage.getItem("ptp-tab") || "plan"; } catch (e) { start = "plan"; }
 	}
-	show(document.getElementById(start) ? start : "patna");
+	show(document.getElementById(start) ? start : "plan");
 
 	// Theme toggle on top of the system setting.
 	var root = document.documentElement, btn = document.getElementById("themebtn");
@@ -605,58 +718,166 @@ footer ul { margin: 0; padding-left: 18px; display: grid; gap: 2px; }
 		label();
 	});
 
-	// Patna drive calculator.
-	var FARES = { "3AC": 1925, "2AC": 2755, flightLow: 7200, flightHigh: 8800 };
-	var TOLLS = 2900; // FASTag, one way, plaza-by-plaza build-up (Rs 2,500 to 3,300)
-	var MISC = 800; // parking, tips, one way
+	// Any-trip planner. Geocoding: Photon (OpenStreetMap). Routing: OSRM demo server.
+	var ROAD_FACTOR = 1.6; // OSRM times vs real Indian highway time with breaks (calibrated on 5 known Pune trips)
 	var FOOD = { home: 120, out: 300 }; // per person per day
-	var DAYS = 3;
+	var MISC_PER_DAY = 300;
 	var food = "home";
+	var places = { from: null, to: null };
+	var route = null;
 	var $ = function (id) { return document.getElementById(id); };
 	var rs = function (n) { return "Rs " + Math.round(n).toLocaleString("en-IN"); };
-	function num(id, fallback) { var v = parseFloat($(id).value); return isFinite(v) && v > 0 ? v : fallback; }
+	function num(id, fallback) { var v = parseFloat($(id).value); return isFinite(v) && v >= 0 ? v : fallback; }
+	function hrs(h) { var H = Math.floor(h), M = Math.round((h - H) * 60); if (M === 60) { H++; M = 0; } return H + " h" + (M ? " " + M + " m" : ""); }
+	function status(msg, err) { var el = $("status"); el.textContent = msg || ""; el.className = "status" + (err ? " err" : ""); }
+	var cache = {};
+	try { cache = JSON.parse(localStorage.getItem("ptp-cache") || "{}"); } catch (e) { cache = {}; }
+	function saveCache() { try { localStorage.setItem("ptp-cache", JSON.stringify(cache)); } catch (e) {} }
 
-	document.querySelectorAll(".seg button").forEach(function (b) {
-		b.addEventListener("click", function () {
-			food = b.getAttribute("data-food");
-			document.querySelectorAll(".seg button").forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
-			calc();
+	function placeLabel(f) {
+		var p = f.properties || {};
+		var main = p.name || p.city || p.county || "";
+		var rest = [ p.city !== main ? p.city : null, p.district || p.county, p.state ].filter(function (x, i, a) { return x && x !== main && a.indexOf(x) === i; }).join(", ");
+		return { main: main, rest: rest, full: main + (rest ? ", " + rest : "") };
+	}
+	function search(q) {
+		var key = "q:" + q.toLowerCase();
+		if (cache[key]) { return Promise.resolve(cache[key]); }
+		var url = "https://photon.komoot.io/api/?limit=6&bbox=68,6,98,37.5&q=" + encodeURIComponent(q);
+		return fetch(url).then(function (r) { if (!r.ok) { throw new Error("search " + r.status); } return r.json(); }).then(function (d) {
+			var out = (d.features || []).filter(function (f) { return (f.properties || {}).countrycode === "IN"; }).map(function (f) {
+				var l = placeLabel(f); return { name: l.main, detail: l.rest, full: l.full, lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0] };
+			});
+			cache[key] = out; saveCache(); return out;
 		});
-	});
-	["c-people", "c-kmpl", "c-fuel", "c-km", "c-room", "c-nights"].forEach(function (id) { $(id).addEventListener("input", calc); });
+	}
 
-	function calc() {
-		var people = Math.min(7, Math.max(1, Math.round(num("c-people", 3))));
-		var kmpl = num("c-kmpl", 14.5), fuel = num("c-fuel", 110), km = num("c-km", 1875);
-		var room = num("c-room", 2000), nights = Math.max(0, Math.round(parseFloat($("c-nights").value) || 0));
+	// Autocomplete for both boxes.
+	[ "from", "to" ].forEach(function (which) {
+		var input = $(which), list = $(which + "-list"), timer = null, items = [], active = -1;
+		function close() { list.hidden = true; input.setAttribute("aria-expanded", "false"); active = -1; }
+		function pick(i) { var it = items[i]; if (!it) { return; } places[which] = it; input.value = it.name; close(); }
+		function render() {
+			list.innerHTML = "";
+			items.forEach(function (it, i) {
+				var li = document.createElement("li");
+				li.setAttribute("role", "option"); li.id = which + "-opt-" + i;
+				li.setAttribute("aria-selected", i === active ? "true" : "false");
+				li.innerHTML = "<span></span><small></small>";
+				li.firstChild.textContent = it.name; li.lastChild.textContent = it.detail;
+				li.addEventListener("mousedown", function (e) { e.preventDefault(); pick(i); });
+				list.appendChild(li);
+			});
+			list.hidden = !items.length; input.setAttribute("aria-expanded", items.length ? "true" : "false");
+		}
+		input.addEventListener("input", function () {
+			places[which] = null; clearTimeout(timer);
+			var q = input.value.trim();
+			if (q.length < 2) { items = []; render(); return; }
+			timer = setTimeout(function () { search(q).then(function (r) { if (input.value.trim() === q && document.activeElement === input) { items = r; active = -1; render(); } }).catch(function () {}); }, 300);
+		});
+		input.addEventListener("keydown", function (e) {
+			if (list.hidden) { return; }
+			if (e.key === "ArrowDown") { e.preventDefault(); active = Math.min(items.length - 1, active + 1); render(); }
+			else if (e.key === "ArrowUp") { e.preventDefault(); active = Math.max(0, active - 1); render(); }
+			else if (e.key === "Enter" && active >= 0) { e.preventDefault(); pick(active); }
+			else if (e.key === "Escape") { close(); }
+		});
+		input.addEventListener("blur", function () { setTimeout(close, 120); });
+	});
+
+	function resolve(which) {
+		if (places[which]) { return Promise.resolve(places[which]); }
+		var q = $(which).value.trim();
+		if (!q) { return Promise.reject(new Error("Enter a " + (which === "from" ? "starting point" : "destination") + ".")); }
+		return search(q).then(function (r) {
+			if (!r.length) { throw new Error("Couldn't find \"" + q + "\". Try adding the state, for example \"" + q + ", Kerala\"."); }
+			places[which] = r[0]; return r[0];
+		});
+	}
+	function getRoute(a, b) {
+		var key = "r:" + [ a.lat, a.lon, b.lat, b.lon ].map(function (x) { return x.toFixed(3); }).join(",");
+		if (cache[key]) { return Promise.resolve(cache[key]); }
+		var url = "https://router.project-osrm.org/route/v1/driving/" + a.lon + "," + a.lat + ";" + b.lon + "," + b.lat + "?overview=simplified&geometries=geojson";
+		return fetch(url).then(function (r) { if (!r.ok) { throw new Error("The route service is busy (" + r.status + "). Try again in a minute."); } return r.json(); }).then(function (d) {
+			if (d.code !== "Ok" || !d.routes || !d.routes.length) { throw new Error("No road route between these places."); }
+			var rt = d.routes[0];
+			var out = { km: rt.distance / 1000, h: rt.duration / 3600, line: rt.geometry.coordinates.map(function (c) { return [ +c[1].toFixed(4), +c[0].toFixed(4) ]; }) };
+			cache[key] = out; saveCache(); return out;
+		});
+	}
+	function airKm(a, b) {
+		var R = 6371, t = Math.PI / 180, dLa = (b.lat - a.lat) * t, dLo = (b.lon - a.lon) * t;
+		var x = Math.sin(dLa / 2) * Math.sin(dLa / 2) + Math.cos(a.lat * t) * Math.cos(b.lat * t) * Math.sin(dLo / 2) * Math.sin(dLo / 2);
+		return 2 * R * Math.asin(Math.sqrt(x));
+	}
+
+	var map = null, layer = null;
+	function drawMap(a, b, line) {
+		if (!window.L) { $("map").hidden = true; return; }
+		if (!map) {
+			map = L.map("map", { scrollWheelZoom: false });
+			L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 18, attribution: "&copy; OpenStreetMap contributors" }).addTo(map);
+		}
+		if (layer) { layer.remove(); }
+		var css = getComputedStyle(document.documentElement);
+		var road = css.getPropertyValue("--road").trim() || "#2f5d50", acc = css.getPropertyValue("--accent").trim() || "#c2541f";
+		var poly = L.polyline(line, { color: road, weight: 5, opacity: 0.9 });
+		layer = L.layerGroup([ poly,
+			L.circleMarker([ a.lat, a.lon ], { radius: 7, color: road, fillColor: "#fff", fillOpacity: 1, weight: 3 }).bindTooltip(a.name),
+			L.circleMarker([ b.lat, b.lon ], { radius: 8, color: acc, fillColor: acc, fillOpacity: 1, weight: 3 }).bindTooltip(b.name)
+		]).addTo(map);
+		setTimeout(function () { map.invalidateSize(); map.fitBounds(poly.getBounds(), { padding: [ 24, 24 ] }); }, 50);
+	}
+
+	function render() {
+		if (!route) { return; }
+		var a = places.from, b = places.to;
+		var people = Math.min(7, Math.max(1, Math.round(num("c-people", 4))));
+		var kmpl = num("c-kmpl", 14.5) || 14.5, fuel = num("c-fuel", 108), room = num("c-room", 2000);
+		var perDay = num("c-day", 9) || 9, tollKm = num("c-toll", 1.5);
+		var roadH = route.h * ROAD_FACTOR;
+		var days = Math.max(1, Math.ceil(roadH / perDay - 0.05));
+		var nights = days - 1;
 		var rooms = Math.ceil(people / 3);
+		var foodDays = Math.max(1, roadH > 6 ? days : 0.5);
 		var lines = [
-			[ "Fuel", km / kmpl * fuel, Math.round(km / kmpl) + " L" ],
-			[ "Tolls", TOLLS, "FASTag" ],
-			[ "Hotels", room * rooms * nights, nights + " night" + (nights === 1 ? "" : "s") + ", " + rooms + " room" + (rooms === 1 ? "" : "s") ],
-			[ "Food", FOOD[food] * people * DAYS, food === "home" ? "home cooked" : "eating out" ],
-			[ "Misc", MISC, "parking, tips" ]
+			[ "Fuel", route.km / kmpl * fuel, Math.round(route.km / kmpl) + " L at Rs " + fuel ],
+			[ "Tolls", route.km * tollKm, "about Rs " + tollKm + "/km" ],
+			[ "Hotels on the way", room * rooms * nights, nights ? nights + " night" + (nights > 1 ? "s" : "") + ", " + rooms + " room" + (rooms > 1 ? "s" : "") : "none needed" ],
+			[ "Food", FOOD[food] * people * foodDays, food === "home" ? "home cooked" : "eating out" ],
+			[ "Misc", MISC_PER_DAY * Math.max(1, days), "parking, tea, tips" ]
 		];
 		var one = lines.reduce(function (s, l) { return s + l[1]; }, 0);
+		$("s-km").textContent = Math.round(route.km).toLocaleString("en-IN") + " km";
+		$("s-time").textContent = hrs(roadH);
 		$("r-one").textContent = rs(one);
 		$("r-rt").textContent = rs(one * 2);
+		$("s-plan").innerHTML = "";
+		var plan = document.createElement("span");
+		plan.textContent = a.name + " to " + b.name + ": " + (days === 1
+			? "a single day's drive with breaks."
+			: "plan " + days + " days with " + nights + " night stop" + (nights > 1 ? "s" : "") + ", about " + hrs(roadH / days) + " of driving a day. Drive in daylight.");
+		$("s-plan").appendChild(plan);
 		var tb = $("r-table").tBodies[0];
 		tb.innerHTML = "";
 		lines.forEach(function (l) {
 			var tr = document.createElement("tr");
-			tr.innerHTML = "<td>" + l[0] + ' <span style="color:var(--muted);font-size:13px">' + l[2] + '</span></td><td class="num">' + rs(l[1]) + "</td>";
+			tr.innerHTML = '<td></td><td class="num"></td>';
+			tr.firstChild.innerHTML = l[0] + ' <span style="color:var(--muted);font-size:13px"></span>';
+			tr.firstChild.lastChild.textContent = l[2];
+			tr.lastChild.textContent = rs(l[1]);
 			tb.appendChild(tr);
 		});
+		var tot = document.createElement("tr"); tot.className = "total"; tot.innerHTML = '<td>One way</td><td class="num">' + rs(one) + "</td>"; tb.appendChild(tot);
 
-		var modes = [
-			{ k: "Car", v: one * 2, cls: "car" },
-			{ k: "Train 3AC", v: FARES["3AC"] * people * 2 },
-			{ k: "Train 2AC", v: FARES["2AC"] * people * 2 },
-			{ k: "Flight", v: (FARES.flightLow + FARES.flightHigh) / 2 * people * 2 }
-		];
+		var air = airKm(a, b);
+		var modes = [ { k: "Car", v: one * 2, cls: "car" },
+			{ k: "Train 3AC", v: Math.max(300, route.km * 1.1) * people * 2 },
+			{ k: "Train 2AC", v: Math.max(500, route.km * 1.57) * people * 2 } ];
+		if (air > 350) { modes.push({ k: "Flight", v: (3800 + air * 2.8) * people * 2 }); }
 		var max = Math.max.apply(null, modes.map(function (m) { return m.v; }));
-		var bars = $("r-bars");
-		bars.innerHTML = "";
+		var bars = $("r-bars"); bars.innerHTML = "";
 		modes.forEach(function (m) {
 			var d = document.createElement("div");
 			d.className = "bar" + (m.cls ? " " + m.cls : "");
@@ -664,11 +885,52 @@ footer ul { margin: 0; padding-left: 18px; display: grid; gap: 2px; }
 			bars.appendChild(d);
 		});
 		var ratio = one * 2 / modes[2].v;
+		var who = people + (people === 1 ? " person" : " people");
 		$("r-verdict").textContent = ratio > 1.3
-			? "For " + people + (people === 1 ? " person" : " people") + ", driving costs about " + ratio.toFixed(1) + " times the 2AC train. It pays off only if you need the car at the other end."
-			: "For " + people + " people, driving is close to the 2AC fare, so the car is worth it if you are happy with three days at the wheel.";
+			? "For " + who + ", driving costs about " + ratio.toFixed(1) + " times the 2AC train. Take the car if you need it at the other end."
+			: ratio < 0.8
+				? "For " + who + ", the car is the cheaper option, about " + Math.round((1 - ratio) * 100) + "% less than 2AC."
+				: "For " + who + ", driving costs about the same as 2AC, so pick on comfort and time.";
+		$("gmaps").href = "https://www.google.com/maps/dir/?api=1&travelmode=driving&origin=" + a.lat + "," + a.lon + "&destination=" + b.lat + "," + b.lon;
 	}
-	calc();
+
+	function plan() {
+		var btn = $("go"); btn.disabled = true; status("Finding places...");
+		Promise.all([ resolve("from"), resolve("to") ]).then(function (p) {
+			$("from").value = p[0].name; $("to").value = p[1].name;
+			status("Finding the road route...");
+			return getRoute(p[0], p[1]).then(function (r) {
+				route = r; $("results").hidden = false; status("");
+				render(); drawMap(p[0], p[1], r.line);
+				try { localStorage.setItem("ptp-last", JSON.stringify(places)); } catch (e) {}
+			});
+		}).catch(function (e) { status(e && e.message ? e.message : "Something went wrong. Check your connection and try again.", true); })
+			.then(function () { btn.disabled = false; });
+	}
+	$("planform").addEventListener("submit", function (e) {
+		e.preventDefault();
+		[ "from", "to" ].forEach(function (w) { $(w + "-list").hidden = true; $(w).setAttribute("aria-expanded", "false"); });
+		if (document.activeElement && document.activeElement.blur) { document.activeElement.blur(); }
+		plan();
+	});
+	document.querySelectorAll(".chips button").forEach(function (c) {
+		c.addEventListener("click", function () { $("to").value = c.getAttribute("data-to"); places.to = null; plan(); });
+	});
+	document.querySelectorAll("[data-plan]").forEach(function (c) {
+		c.addEventListener("click", function () { $("from").value = "Pune"; places.from = null; $("to").value = c.getAttribute("data-plan"); places.to = null; show("plan"); window.scrollTo(0, 0); plan(); });
+	});
+	document.querySelectorAll(".seg button").forEach(function (b) {
+		b.addEventListener("click", function () {
+			food = b.getAttribute("data-food");
+			document.querySelectorAll(".seg button").forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+			render();
+		});
+	});
+	[ "c-people", "c-kmpl", "c-fuel", "c-room", "c-day", "c-toll" ].forEach(function (id) { $(id).addEventListener("input", render); });
+	try {
+		var last = JSON.parse(localStorage.getItem("ptp-last") || "null");
+		if (last && last.from && last.to) { places = last; $("from").value = last.from.name; $("to").value = last.to.name; plan(); }
+	} catch (e) {}
 })();
 </script>
 </body>
