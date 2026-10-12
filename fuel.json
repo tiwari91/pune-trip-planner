@@ -1,14 +1,15 @@
 {
- "updated": "2026-10-11",
+ "updated": "2026-10-12",
  "source": "https://www.goodreturns.in/petrol-price.html",
  "states": {
   "Andaman and Nicobar Islands": 88.66,
+  "Andhra Pradesh": 117.51,
   "Arunachal Pradesh": 97.96,
   "Assam": 106.65,
-  "Bihar": 114.55,
+  "Bihar": 113.37,
   "Chandigarh": 101.51,
-  "Chhattisgarh": 108.3,
-  "Dadra and Nagar Haveli and Daman and Diu": 99.46,
+  "Chhattisgarh": 108.06,
+  "Dadra and Nagar Haveli and Daman and Diu": 99.5,
   "Delhi": 102.12,
   "Goa": 103.92,
   "Gujarat": 102.01,
@@ -51,7 +52,7 @@
   "Hyderabad": 115.69,
   "Jaipur": 113.19,
   "Lucknow": 102.26,
-  "Patna": 114.55,
+  "Patna": 113.37,
   "Thiruvananthapuram": 115.49
  }
 }
