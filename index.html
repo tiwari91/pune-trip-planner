@@ -821,7 +821,7 @@ details.opts .fields { margin-top: 12px; grid-template-columns: repeat(3, minmax
 	function search(q, submit) {
 		var key = "q:" + q.toLowerCase();
 		if (cache[key]) { return Promise.resolve(cache[key]); }
-		var url = "https://photon.komoot.io/api/?limit=8&bbox=68,6,98,37.5&osm_tag=place&q=" + encodeURIComponent(q);
+		var url = "https://photon.komoot.io/api/?limit=8&bbox=68,6,98,37.5&osm_tag=place&osm_tag=amenity:place_of_worship&osm_tag=tourism&osm_tag=historic&q=" + encodeURIComponent(q);
 		return fetch(url).then(function (r) { if (!r.ok) { throw new Error("search " + r.status); } return r.json(); }).then(function (d) {
 			var seen = {};
 			return (d.features || []).filter(function (f) { return (f.properties || {}).countrycode === "IN"; }).map(function (f) {
